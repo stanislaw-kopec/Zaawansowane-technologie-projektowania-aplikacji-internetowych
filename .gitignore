@@ -1,0 +1,18 @@
+# Zaleznosci Node.js
+node_modules/
+
+# Lokalne zmienne srodowiskowe
+.env
+.env.*
+!.env.example
+
+# Logi
+*.log
+
+# Pliki systemowe
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Dokumenty PDF
+*.pdf

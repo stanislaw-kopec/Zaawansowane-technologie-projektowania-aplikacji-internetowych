@@ -30,6 +30,17 @@ app.get("/api/rooms/:id", (req, res) => {
     res.json(room);
 });
 
+app.get("/api/reservations", (req, res) => {
+    if (req.query.roomId === undefined) {
+        return res.json(reservations);
+    }
+
+    const roomId = Number(req.query.roomId);
+    const filteredReservations = reservations.filter(reservation => reservation.roomId === roomId);
+
+    res.json(filteredReservations);
+});
+
 app.post("/api/reservations", (req, res) => {
     const { roomId, reservedBy, participants, date } = req.body ?? {};
 

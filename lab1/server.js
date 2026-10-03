@@ -65,6 +65,12 @@ app.post("/api/reservations", (req, res) => {
         });
     }
 
+    if (participants > room.capacity) {
+        return res.status(409).json({
+            message: "Room capacity exceeded"
+        });
+    }
+
     const reservation = {
         id: nextReservationId++,
         roomId,

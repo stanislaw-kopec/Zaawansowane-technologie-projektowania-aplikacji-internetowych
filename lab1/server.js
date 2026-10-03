@@ -95,6 +95,20 @@ app.post("/api/reservations", (req, res) => {
     res.status(201).json(reservation);
 });
 
+app.patch("/api/reservations/:id/cancel", (req, res) => {
+    const id = Number(req.params.id);
+    const reservation = reservations.find(reservation => reservation.id === id);
+
+    if (!reservation) {
+        return res.status(404).json({
+            message: "Reservation not found"
+        });
+    }
+
+    reservation.status = "CANCELLED";
+    res.status(200).json(reservation);
+});
+
 app.listen(3000, () => {
     console.log("Server running on http://localhost:3000");
 });

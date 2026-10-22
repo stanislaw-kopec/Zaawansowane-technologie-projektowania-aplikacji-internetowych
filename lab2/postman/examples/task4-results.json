@@ -1,0 +1,680 @@
+{
+  "description": "Rzeczywiste wyniki testów HTTP zadania 4",
+  "scenarios": [
+    {
+      "scenario": "7.01 Baza: sala 1, 10:00-12:00",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 3,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.224Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.02 Styk po: 12:00-13:00 - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T12:00:00.000Z",
+          "endTime": "2026-11-07T13:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 4,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T12:00:00.000Z",
+          "endTime": "2026-11-07T13:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.225Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.03 Styk przed: 08:00-10:00 - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T08:00:00.000Z",
+          "endTime": "2026-11-07T10:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 5,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T08:00:00.000Z",
+          "endTime": "2026-11-07T10:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.226Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.04 Nakładanie: 11:00-13:00 - 409",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T11:00:00.000Z",
+          "endTime": "2026-11-07T13:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "ROOM_ALREADY_BOOKED",
+            "message": "Room already booked for this time interval",
+            "requestId": "6fdaade8-00be-4487-8e22-13fae28794ff"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "7.05 Obejmuje całą rezerwację: 09:00-13:00 - 409",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T09:00:00.000Z",
+          "endTime": "2026-11-07T13:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "ROOM_ALREADY_BOOKED",
+            "message": "Room already booked for this time interval",
+            "requestId": "802d4504-41eb-434f-a26f-fcc83de85377"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "7.06 Wewnątrz: 10:30-11:00 - 409",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:30:00.000Z",
+          "endTime": "2026-11-07T11:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "ROOM_ALREADY_BOOKED",
+            "message": "Room already booked for this time interval",
+            "requestId": "93dd3269-42eb-47fb-b830-2f7a85db2338"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "7.07 Ten sam termin w innej sali - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 2,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 6,
+          "roomId": 2,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.231Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.08 Identyczny przedział w tej samej sali - 409",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "ROOM_ALREADY_BOOKED",
+            "message": "Room already booked for this time interval",
+            "requestId": "695ccc4b-63d5-45c1-a612-36437ceb8e1a"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "7.09 Ten sam moment zapisany z offsetem - 409",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T11:00:00+01:00",
+          "endTime": "2026-11-07T13:00:00+01:00"
+        }
+      },
+      "response": {
+        "status": 409,
+        "body": {
+          "error": {
+            "code": "ROOM_ALREADY_BOOKED",
+            "message": "Room already booked for this time interval",
+            "requestId": "8c457382-2a4f-45f0-8912-3aca0d418499"
+          }
+        }
+      }
+    },
+    {
+      "scenario": "7.10 Anuluj rezerwację bazową",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/3/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 3,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.224Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.11 Anulowana rezerwacja nie blokuje terminu - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 7,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.235Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.12 Porządki: adjacentAfterId",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/4/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 4,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T12:00:00.000Z",
+          "endTime": "2026-11-07T13:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.225Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.13 Porządki: adjacentBeforeId",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/5/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 5,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T08:00:00.000Z",
+          "endTime": "2026-11-07T10:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.226Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.14 Porządki: otherRoomId",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/6/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 6,
+          "roomId": 2,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.231Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "7.15 Porządki: replacementId",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/7/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 7,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.235Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "8.01 Koniec równy początkowi - 400",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T10:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "d055b014-707f-4ae2-902f-8125fa753f65",
+            "details": [
+              {
+                "location": "body",
+                "field": "endTime",
+                "message": "endTime must be later than startTime"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.02 Koniec przed początkiem - 400",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T12:00:00.000Z",
+          "endTime": "2026-11-07T10:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "2f33270a-66d5-4f6e-9dd4-1b8909d4fb25",
+            "details": [
+              {
+                "location": "body",
+                "field": "endTime",
+                "message": "endTime must be later than startTime"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.03 14 minut 59 sekund - 400",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T10:14:59.000Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "2b76a5a9-5159-401a-9514-f760679df30b",
+            "details": [
+              {
+                "location": "body",
+                "field": "endTime",
+                "message": "Reservation must last between 15 minutes and 8 hours"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.04 Dokładnie 15 minut - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T10:15:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 8,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T10:15:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.244Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "8.05 Porządki po 15 minutach",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/8/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 8,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T10:15:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.244Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "8.06 Dokładnie 8 godzin - OK",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T18:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": {
+          "id": 9,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T18:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:45:54.246Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "8.07 Porządki po 8 godzinach",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/9/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 9,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T18:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.246Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "scenario": "8.08 8 godzin i 1 sekunda - 400",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T18:00:01.000Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "bb575ef1-671a-49c8-88ed-738b6e64f8f8",
+            "details": [
+              {
+                "location": "body",
+                "field": "endTime",
+                "message": "Reservation must last between 15 minutes and 8 hours"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.09 Początek w przeszłości - 400",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-10-22T16:45:54.060Z",
+          "endTime": "2026-10-22T17:45:54.060Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "ee94bb85-f548-41cc-928c-888e81d879da",
+            "details": [
+              {
+                "location": "body",
+                "field": "startTime",
+                "message": "startTime must not be in the past"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.10 Przeszłość i zła kolejność: oba błędy",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-10-22T17:45:54.060Z",
+          "endTime": "2026-10-22T16:45:54.060Z"
+        }
+      },
+      "response": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "9d73b4fc-51f8-42c0-9cf5-80235875ff2a",
+            "details": [
+              {
+                "location": "body",
+                "field": "startTime",
+                "message": "startTime must not be in the past"
+              },
+              {
+                "location": "body",
+                "field": "endTime",
+                "message": "endTime must be later than startTime"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "scenario": "8.11 Porządki po folderze 1: druga sala",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/2/cancel"
+      },
+      "response": {
+        "status": 200,
+        "body": {
+          "id": 2,
+          "roomId": 2,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-05T10:00:00.000Z",
+          "endTime": "2026-11-05T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:45:54.136Z",
+          "cancelledAt": null
+        }
+      }
+    }
+  ]
+}

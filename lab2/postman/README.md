@@ -1,7 +1,7 @@
-# Room Booking API - Postman po zadaniu 3
+# Room Booking API - Postman po zadaniu 4
 
-Aktualna kolekcja: `Room-Booking-API.postman_collection.json` (65 żądań z testami).
-Archiwa: `Lab2-Task1.postman_collection.json` i `Lab2-Task2.postman_collection.json`.
+Aktualna kolekcja: `Room-Booking-API.postman_collection.json` (91 żądań z testami).
+Archiwa: `Lab2-Task1.postman_collection.json` `Lab2-Task2.postman_collection.json` i `Lab2-Task3.postman_collection.json`.
 Archiwa pasują do wcześniejszych wersji kodu; aktualne API testuj aktualną kolekcją.
 
 ## Uruchomienie
@@ -25,6 +25,8 @@ Zwykłe `npm --prefix lab2 start` nie włącza tymczasowego endpointu `/api/debu
 | 4 | Wiele błędów walidacji jednocześnie |
 | 5 | Nieistniejące zasoby, pojemność i anulowanie |
 | 6 | Nieznana ścieżka/metoda, niepoprawny JSON, 500, requestId oraz błędy parsera 413 i 415 |
+| 7 | Wszystkie przypadki z tabeli nakładania, identyczne przedziały i równoważne strefy czasowe |
+| 8 | Kolejność dat, granice 15 minut / 8 godzin, przeszłość oraz porządki |
 
 Testy na poziomie kolekcji sprawdzają identyfikator każdego żądania oraz wspólny format każdej odpowiedzi z błędem.
 
@@ -57,4 +59,23 @@ Każdy wpis zakończenia zawiera ID, metodę, URL, status i czas w ms. Tymczasow
 ```
 
 Walidacja dodaje `details`. Nieoczekiwany błąd ma ogólny komunikat; pełne szczegóły pojawiają się tylko w terminalu.
-Reguły czasu i nakładania rezerwacji oraz rozbudowane anulowanie zostają na zadania 4 i 5.
+Reguły czasu i nakładania są zaimplementowane w serwisie. Rozbudowane anulowanie pozostaje na zadanie 5.
+
+## Daty i powtarzalność po zadaniu 4
+
+Żądanie **1.01** ustawia daty startowe za 14 dni. W body widzisz zmienne, które Postman podstawia przy wysyłaniu.
+Uruchom **1.01** przed ręcznymi testami pozostałych folderów.
+Pełny przebieg anuluje wszystkie utworzone przez siebie rezerwacje, więc można go powtórzyć na tym samym serwerze.
+Po przerwanym przebiegu albo wcześniejszych ręcznych testach zrestartuj serwer, żeby usunąć kolidujące dane.
+
+Folder **7** uruchamiaj w podanej kolejności. Rezerwacja bazowa trwa 10:00-12:00; przyjęte rezerwacje stykające się z nią pozostają aktywne do końca scenariusza.
+W **7.11** ponownie zajmujemy termin po anulowaniu rezerwacji bazowej. Nie dotyka on aktywnych rezerwacji sąsiednich.
+Do sprawozdania użyj **7.01-7.11** oraz **8.01-8.10**. Wyniki wszystkich przypadków zostaną też zapisane podczas automatycznej weryfikacji w `examples/task4-results.json`.
+
+Porównania czasu wykonujemy na timestampach. Koniec jednego przedziału może być początkiem następnego.
+Minimum 15 minut i maksimum 8 godzin są dopuszczalne. Początek równy aktualnemu czasowi jest dopuszczalny; testujemy to ze stałym zegarem w testach serwisu.
+
+## Testy serwisu
+
+Z głównego katalogu repozytorium uruchom: npm --prefix lab2 test.
+Testy używają stałego zegara i nie wymagają uruchomionego serwera ani Postmana.

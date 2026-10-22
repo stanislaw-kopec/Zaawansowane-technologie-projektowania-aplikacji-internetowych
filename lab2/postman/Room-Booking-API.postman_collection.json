@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Room Booking API - Lab2 - Task3",
+    "name": "Room Booking API - Lab2 - Task4",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Stan po zadaniu 3: walidacja, centralna obsługa błędów i request logging. Uruchom npm --prefix lab2 run start:debug. Cała kolekcja: 1 iteracja, podana kolejność. Endpoint /api/debug/crash jest tymczasowy. Zadania 4 i 5 nie są jeszcze zaimplementowane."
+    "description": "Stan po zadaniu 4: reguły czasu i brak nakładających się aktywnych rezerwacji. Uruchom npm --prefix lab2 run start:debug. Uruchamiaj całą kolekcję w kolejności. Żądanie 1.01 ustawia daty w przyszłości. Kolekcja sprząta własne rezerwacje. Po przerwanym przebiegu uruchom ponownie serwer."
   },
   "variable": [
     {
@@ -28,6 +28,38 @@
             "url": "{{baseUrl}}/api/rooms"
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const day = new Date();",
+                  "day.setUTCDate(day.getUTCDate() + 14);",
+                  "day.setUTCHours(0, 0, 0, 0);",
+                  "function at(dayOffset, hour, minute = 0, second = 0) {",
+                  "    return new Date(day.getTime() + dayOffset * 86400000 + hour * 3600000 + minute * 60000 + second * 1000).toISOString();",
+                  "}",
+                  "pm.collectionVariables.set(\"startTimeUtc\", at(0, 9));",
+                  "pm.collectionVariables.set(\"endTimeUtc\", at(0, 11));",
+                  "pm.collectionVariables.set(\"startTimeOffset\", at(0, 10).replace(\".000Z\", \"+01:00\"));",
+                  "pm.collectionVariables.set(\"endTimeOffset\", at(0, 12).replace(\".000Z\", \"+01:00\"));",
+                  "pm.collectionVariables.set(\"secondStartTime\", at(0, 10));",
+                  "pm.collectionVariables.set(\"secondEndTime\", at(0, 12));",
+                  "for (const hour of [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]) {",
+                  "    pm.collectionVariables.set(\"ruleTime\" + hour, at(2, hour));",
+                  "}",
+                  "pm.collectionVariables.set(\"ruleTime1030\", at(2, 10, 30));",
+                  "pm.collectionVariables.set(\"ruleTime1100\", at(2, 11));",
+                  "pm.collectionVariables.set(\"ruleTime1015\", at(2, 10, 15));",
+                  "pm.collectionVariables.set(\"ruleTime101459\", at(2, 10, 14, 59));",
+                  "pm.collectionVariables.set(\"ruleTime180001\", at(2, 18, 0, 1));",
+                  "pm.collectionVariables.set(\"ruleTimeOffsetStart\", at(2, 11).replace(\".000Z\", \"+01:00\"));",
+                  "pm.collectionVariables.set(\"ruleTimeOffsetEnd\", at(2, 13).replace(\".000Z\", \"+01:00\"));",
+                  "pm.collectionVariables.set(\"pastStart\", new Date(Date.now() - 7200000).toISOString());",
+                  "pm.collectionVariables.set(\"pastEnd\", new Date(Date.now() - 3600000).toISOString());"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -73,7 +105,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  Jan Kowalski  \",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  Jan Kowalski  \",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -92,8 +124,8 @@
                   "pm.collectionVariables.set(\"reservationId\", String(created.id));",
                   "pm.test(\"Dane po walidacji i UTC\", function () {",
                   "    pm.expect(created.reservedBy).to.eql(\"Jan Kowalski\");",
-                  "    pm.expect(created.startTime).to.eql(\"2026-11-10T09:00:00.000Z\");",
-                  "    pm.expect(created.endTime).to.eql(\"2026-11-10T11:00:00.000Z\");",
+                  "    pm.expect(created.startTime).to.eql(pm.collectionVariables.get(\"startTimeUtc\"));",
+                  "    pm.expect(created.endTime).to.eql(pm.collectionVariables.get(\"endTimeUtc\"));",
                   "    pm.expect(created.status).to.eql(\"CONFIRMED\");",
                   "});"
                 ]
@@ -114,7 +146,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
+              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{secondStartTime}}\",\n  \"endTime\": \"{{secondEndTime}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -128,7 +160,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });"
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"secondReservationId\", String(pm.response.json().id));"
                 ]
               }
             }
@@ -735,7 +768,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -786,7 +819,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -837,7 +870,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -888,7 +921,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -939,7 +972,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -990,7 +1023,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": \"1\",\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": \"1\",\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1041,7 +1074,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 0,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 0,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1092,7 +1125,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": -1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": -1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1143,7 +1176,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1.5,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1.5,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1194,7 +1227,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": null,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": null,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1245,7 +1278,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": true,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": true,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1296,7 +1329,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"1\",\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"1\",\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1347,7 +1380,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1398,7 +1431,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1449,7 +1482,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 1.5,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 1.5,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1500,7 +1533,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": null,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": null,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1551,7 +1584,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": true,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": true,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1602,7 +1635,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  \",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  \",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1653,7 +1686,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"ab\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"ab\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1704,7 +1737,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1755,7 +1788,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1806,7 +1839,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-02-30T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-02-30T10:00:00Z\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1857,7 +1890,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T10:00:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"2026-11-10T10:00:00\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1908,7 +1941,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-02-30T10:00:00Z\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"2026-02-30T10:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1959,7 +1992,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\",\n  \"status\": \"CANCELLED\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\",\n  \"status\": \"CANCELLED\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2010,7 +2043,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\",\n  \"id\": 123\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\",\n  \"id\": 123\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2176,7 +2209,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \" a \",\n  \"participants\": 0,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"nie-data\",\n  \"status\": \"CANCELLED\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \" a \",\n  \"participants\": 0,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"nie-data\",\n  \"status\": \"CANCELLED\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2241,7 +2274,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 999999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 999999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2276,7 +2309,7 @@
             "url": "{{baseUrl}}/api/reservations",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 31,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 31,\n  \"startTime\": \"{{startTimeOffset}}\",\n  \"endTime\": \"{{endTimeOffset}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2636,6 +2669,795 @@
                 "exec": [
                   "pm.test(\"HTTP 415\", function () { pm.expect(pm.response.code).to.eql(415); });",
                   "pm.test(\"Kod UNSUPPORTED_MEDIA_TYPE\", function () { pm.expect(pm.response.json().error.code).to.eql(\"UNSUPPORTED_MEDIA_TYPE\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. Brak nakładania rezerwacji - tabela z zadania 4",
+      "item": [
+        {
+          "name": "7.01 Baza: sala 1, 10:00-12:00",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"ruleReservationId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.02 Styk po: 12:00-13:00 - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime12}}\",\n  \"endTime\": \"{{ruleTime13}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"adjacentAfterId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.03 Styk przed: 08:00-10:00 - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime8}}\",\n  \"endTime\": \"{{ruleTime10}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"adjacentBeforeId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.04 Nakładanie: 11:00-13:00 - 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime11}}\",\n  \"endTime\": \"{{ruleTime13}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Kod ROOM_ALREADY_BOOKED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_ALREADY_BOOKED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.05 Obejmuje całą rezerwację: 09:00-13:00 - 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime9}}\",\n  \"endTime\": \"{{ruleTime13}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Kod ROOM_ALREADY_BOOKED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_ALREADY_BOOKED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.06 Wewnątrz: 10:30-11:00 - 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime1030}}\",\n  \"endTime\": \"{{ruleTime1100}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Kod ROOM_ALREADY_BOOKED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_ALREADY_BOOKED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.07 Ten sam termin w innej sali - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"otherRoomId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.08 Identyczny przedział w tej samej sali - 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Kod ROOM_ALREADY_BOOKED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_ALREADY_BOOKED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.09 Ten sam moment zapisany z offsetem - 409",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTimeOffsetStart}}\",\n  \"endTime\": \"{{ruleTimeOffsetEnd}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Kod ROOM_ALREADY_BOOKED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_ALREADY_BOOKED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.10 Anuluj rezerwację bazową",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{ruleReservationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.11 Anulowana rezerwacja nie blokuje terminu - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"replacementId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.12 Porządki: adjacentAfterId",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{adjacentAfterId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.13 Porządki: adjacentBeforeId",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{adjacentBeforeId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.14 Porządki: otherRoomId",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{otherRoomId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7.15 Porządki: replacementId",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{replacementId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8. Czas rezerwacji - granice i błędne przedziały",
+      "item": [
+        {
+          "name": "8.01 Koniec równy początkowi - 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime10}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola endTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.02 Koniec przed początkiem - 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime12}}\",\n  \"endTime\": \"{{ruleTime10}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola endTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.03 14 minut 59 sekund - 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime101459}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola endTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.04 Dokładnie 15 minut - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime1015}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"minDurationId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.05 Porządki po 15 minutach",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{minDurationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.06 Dokładnie 8 godzin - OK",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime18}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"maxDurationId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.07 Porządki po 8 godzinach",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{maxDurationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.08 8 godzin i 1 sekunda - 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime180001}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola endTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.09 Początek w przeszłości - 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{pastStart}}\",\n  \"endTime\": \"{{pastEnd}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola startTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.10 Przeszłość i zła kolejność: oba błędy",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{pastEnd}}\",\n  \"endTime\": \"{{pastStart}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Błąd pola startTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true); });",
+                  "pm.test(\"Błąd pola endTime\", function () { pm.expect(pm.response.json().error.details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8.11 Porządki po folderze 1: druga sala",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{secondReservationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
                 ]
               }
             }

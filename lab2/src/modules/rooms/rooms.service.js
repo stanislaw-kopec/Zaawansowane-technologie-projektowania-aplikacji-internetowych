@@ -1,4 +1,4 @@
-const AppError = require("../../errors/AppError");
+const NotFoundError = require("../../errors/NotFoundError");
 
 function createRoomsService({ roomsRepository }) {
     return {
@@ -7,7 +7,7 @@ function createRoomsService({ roomsRepository }) {
         },
         async getRoom(id) {
             const room = await roomsRepository.findById(id);
-            if (!room) throw new AppError("Room not found", 404);
+            if (!room) throw new NotFoundError("Room");
             return room;
         }
     };

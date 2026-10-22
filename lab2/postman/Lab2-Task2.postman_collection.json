@@ -1,0 +1,2380 @@
+{
+  "info": {
+    "name": "Room Booking API - Lab2 - Task2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Stan po zadaniu 2: Zod, validate, req.validated i wszystkie błędy walidacji naraz. Uruchom npm --prefix lab2 start, następnie całą kolekcję w Runnerze w podanej kolejności. Bez osobnego środowiska. Zadania 3-5 nie są jeszcze zaimplementowane. Błędy domenowe 404/409 zachowują format z zadania 1."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "reservationId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Poprawne endpointy i konwersja danych",
+      "item": [
+        {
+          "name": "1.01 Lista sal",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Cztery sale\", function () { pm.expect(pm.response.json().length).to.eql(4); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.02 ID z URL zamienione na liczbę",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Sala 1\", function () { pm.expect(pm.response.json().id).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.03 Utwórz rezerwację: trim i offset czasu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  Jan Kowalski  \",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "const created = pm.response.json();",
+                  "pm.collectionVariables.set(\"reservationId\", String(created.id));",
+                  "pm.test(\"Dane po walidacji i UTC\", function () {",
+                  "    pm.expect(created.reservedBy).to.eql(\"Jan Kowalski\");",
+                  "    pm.expect(created.startTime).to.eql(\"2026-11-10T09:00:00.000Z\");",
+                  "    pm.expect(created.endTime).to.eql(\"2026-11-10T11:00:00.000Z\");",
+                  "    pm.expect(created.status).to.eql(\"CONFIRMED\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.04 Druga sala i daty z Z",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.05 Wszystkie rezerwacje",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Zapisana rezerwacja jest na liście\", function () { pm.expect(pm.response.json().some(r => String(r.id) === pm.collectionVariables.get(\"reservationId\"))).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.06 Filtr roomId konwertowany na liczbę",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Tylko sala 1, w tym utworzona rezerwacja\", function () { const rows = pm.response.json(); pm.expect(rows.length > 0).to.eql(true); pm.expect(rows.every(r => r.roomId === 1)).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.07 Filtr bez wyników",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Pusta lista\", function () { pm.expect(pm.response.json()).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Walidacja params i query",
+      "item": [
+        {
+          "name": "ID sali abc: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/abc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID sali 0: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID sali -1: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID sali 1.5: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/1.5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID rezerwacji abc: 400",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/abc/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID rezerwacji 0: 400",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/0/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID rezerwacji -1: 400",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/-1/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "ID rezerwacji 1.5: 400",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/1.5/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"params\" && d.field === \"id\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId query abc: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=abc"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId query 0: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=0"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId query -1: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=-1"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId query 1.5: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=1.5"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId query puste: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId="
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Powtórzony roomId: 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations?roomId=1&roomId=2"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"query\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Walidacja body",
+      "item": [
+        {
+          "name": "Brak roomId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Brak reservedBy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Brak participants",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Brak startTime",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Brak endTime",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = \"1\"",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": \"1\",\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = 0",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 0,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = -1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": -1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = 1.5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1.5,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = null",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": null,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "roomId = true",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": true,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = \"1\"",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"1\",\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = 0",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = -1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = 1.5",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 1.5,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = null",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": null,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "participants = true",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": true,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "reservedBy: same spacje",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"  \",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "reservedBy: 2 znaki",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"ab\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "reservedBy: 101 znaków",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "startTime: brak strefy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "startTime: nieistniejąca data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-02-30T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "endTime: brak strefy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T10:00:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "endTime: nieistniejąca data",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-02-30T10:00:00Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nieznane pole status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\",\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nieznane pole id",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\",\n  \"id\": 123\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Puste body JSON",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"roomId\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"startTime\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tablica zamiast obiektu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "[]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"\")).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Wiele błędów jednocześnie - do sprawozdania",
+      "item": [
+        {
+          "name": "4.01 Cztery problemy w jednym żądaniu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "lab2-task2-multiple-errors"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \" a \",\n  \"participants\": 0,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"nie-data\",\n  \"status\": \"CANCELLED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Format błędu walidacji i requestId\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.code).to.eql(\"VALIDATION_ERROR\");",
+                  "    pm.expect(error.message).to.eql(\"Validation failed\");",
+                  "    pm.expect(typeof error.requestId).to.eql(\"string\");",
+                  "    pm.expect(error.requestId.length > 0).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+                  "    pm.expect(Array.isArray(error.details)).to.eql(true);",
+                  "    for (const detail of error.details) {",
+                  "        pm.expect([\"params\", \"query\", \"body\"].includes(detail.location)).to.eql(true);",
+                  "        pm.expect(typeof detail.field).to.eql(\"string\");",
+                  "        pm.expect(typeof detail.message).to.eql(\"string\");",
+                  "    }",
+                  "});",
+                  "pm.test(\"Wszystkie oczekiwane błędy są w details\", function () {",
+                  "    const details = pm.response.json().error.details;",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"reservedBy\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"participants\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"endTime\")).to.eql(true);",
+                  "    pm.expect(details.some(d => d.location === \"body\" && d.field === \"\")).to.eql(true);",
+                  "});",
+                  "pm.test(\"Co najmniej cztery błędy i nieznane pole\", function () {",
+                  "    const error = pm.response.json().error;",
+                  "    pm.expect(error.details.length >= 4).to.eql(true);",
+                  "    pm.expect(error.details.some(d => d.field === \"\" && d.message.includes(\"status\"))).to.eql(true);",
+                  "    pm.expect(error.requestId).to.eql(\"lab2-task2-multiple-errors\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Regresja: istniejące reguły i anulowanie",
+      "item": [
+        {
+          "name": "5.01 Poprawne dane, nieistniejąca sala",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 999999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().message).to.eql(\"Room not found\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.02 Przekroczenie pojemności",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/reservations",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 31,\n  \"startTime\": \"2026-11-10T10:00:00+01:00\",\n  \"endTime\": \"2026-11-10T12:00:00+01:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().message).to.eql(\"Room capacity exceeded\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.03 Poprawne ID nieistniejącej sali",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/rooms/999999"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.04 Anuluj utworzoną rezerwację",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.05 Ponów anulowanie",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Nadal anulowana\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.06 Poprawne ID nieistniejącej rezerwacji",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/reservations/999999/cancel"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

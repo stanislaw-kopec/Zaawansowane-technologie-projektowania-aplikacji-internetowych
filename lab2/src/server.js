@@ -4,7 +4,8 @@ const { createReservationsRepository } = require("./modules/reservations/reserva
 
 const app = createApp({
     roomsRepository: createRoomsRepository(),
-    reservationsRepository: createReservationsRepository()
+    reservationsRepository: createReservationsRepository(),
+    enableDebugRoutes: process.argv.includes("--debug")
 });
 
 app.listen(3000, () => {

@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Room Booking API - Lab2 - Task2",
+    "name": "Room Booking API - Lab2 - Task3",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Stan po zadaniu 2: Zod, validate, req.validated i wszystkie błędy walidacji naraz. Uruchom npm --prefix lab2 start, następnie całą kolekcję w Runnerze w podanej kolejności. Bez osobnego środowiska. Zadania 3-5 nie są jeszcze zaimplementowane. Błędy domenowe 404/409 zachowują format z zadania 1."
+    "description": "Stan po zadaniu 3: walidacja, centralna obsługa błędów i request logging. Uruchom npm --prefix lab2 run start:debug. Cała kolekcja: 1 iteracja, podana kolejność. Endpoint /api/debug/crash jest tymczasowy. Zadania 4 i 5 nie są jeszcze zaimplementowane."
   },
   "variable": [
     {
@@ -2256,7 +2256,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
-                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().message).to.eql(\"Room not found\"); });"
+                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().error.message).to.eql(\"Room not found\"); });",
+                  "pm.test(\"Kod błędu domenowego\", function () { pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"); });"
                 ]
               }
             }
@@ -2290,7 +2291,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
-                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().message).to.eql(\"Room capacity exceeded\"); });"
+                  "pm.test(\"Komunikat\", function () { pm.expect(pm.response.json().error.message).to.eql(\"Room capacity exceeded\"); });",
+                  "pm.test(\"Kod błędu domenowego\", function () { pm.expect(pm.response.json().error.code).to.eql(\"ROOM_CAPACITY_EXCEEDED\"); });"
                 ]
               }
             }
@@ -2309,7 +2311,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });"
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test(\"Kod błędu domenowego\", function () { pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"); });"
                 ]
               }
             }
@@ -2368,13 +2371,303 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });"
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test(\"Kod błędu domenowego\", function () { pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"); });"
                 ]
               }
             }
           ]
         }
       ]
+    },
+    {
+      "name": "6. Global error handling i logowanie - zadanie 3",
+      "item": [
+        {
+          "name": "6.01 Nieznana ścieżka: JSON 404",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/nope",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test(\"Kod NOT_FOUND\", function () { pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.02 Nieobsługiwana metoda: JSON 404",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/rooms",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 404\", function () { pm.expect(pm.response.code).to.eql(404); });",
+                  "pm.test(\"Kod NOT_FOUND\", function () { pm.expect(pm.response.json().error.code).to.eql(\"NOT_FOUND\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.03 Niepoprawny JSON: 400",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Request-Id",
+                "value": "lab2-task3-invalid-json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"roomId\": 1,",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod INVALID_JSON\", function () { pm.expect(pm.response.json().error.code).to.eql(\"INVALID_JSON\"); });",
+                  "pm.test(\"Zachowany requestId klienta\", function () { pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.eql(\"lab2-task3-invalid-json\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.04 Błąd 500 - ten sam requestId w terminalu",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/debug/crash",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "lab2-task3-crash"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 500\", function () { pm.expect(pm.response.code).to.eql(500); });",
+                  "pm.test(\"Kod INTERNAL_SERVER_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"INTERNAL_SERVER_ERROR\"); });",
+                  "pm.test(\"Zachowany requestId klienta\", function () { pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.eql(\"lab2-task3-crash\"); });",
+                  "pm.test(\"Ogólny komunikat bez szczegółów wyjątku\", function () {",
+                  "    pm.expect(pm.response.json().error.message).to.eql(\"Internal server error\");",
+                  "    pm.expect(JSON.stringify(pm.response.json()).includes(\"boom\")).to.eql(false);",
+                  "    pm.expect(Object.keys(pm.response.json().error).sort()).to.eql([\"code\", \"message\", \"requestId\"]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.05 Serwer działa po błędzie 500",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/rooms",
+            "header": [
+              {
+                "key": "X-Request-Id",
+                "value": "lab2-task3-after-crash"
+              }
+            ]
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Zachowany requestId klienta\", function () { pm.expect(pm.response.headers.get(\"X-Request-Id\")).to.eql(\"lab2-task3-after-crash\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.06 Wygeneruj nowy requestId",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/rooms/abc",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.collectionVariables.set(\"previousRequestId\", pm.response.headers.get(\"X-Request-Id\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.07 Kolejne żądanie ma inny requestId",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/rooms/abc",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Kod VALIDATION_ERROR\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); });",
+                  "pm.test(\"Unikalny requestId\", function () { pm.expect(pm.response.headers.get(\"X-Request-Id\") !== pm.collectionVariables.get(\"previousRequestId\")).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.08 Za duże body: spójny błąd 413",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{oversizedBody}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"oversizedBody\", JSON.stringify({ data: \"x\".repeat(103000) }));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 413\", function () { pm.expect(pm.response.code).to.eql(413); });",
+                  "pm.test(\"Kod PAYLOAD_TOO_LARGE\", function () { pm.expect(pm.response.json().error.code).to.eql(\"PAYLOAD_TOO_LARGE\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "6.09 Nieobsługiwane kodowanie: spójny błąd 415",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Encoding",
+                "value": "unsupported"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 415\", function () { pm.expect(pm.response.code).to.eql(415); });",
+                  "pm.test(\"Kod UNSUPPORTED_MEDIA_TYPE\", function () { pm.expect(pm.response.json().error.code).to.eql(\"UNSUPPORTED_MEDIA_TYPE\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"X-Request-Id jest obecny\", function () {",
+          "    const requestId = pm.response.headers.get(\"X-Request-Id\");",
+          "    pm.expect(typeof requestId).to.eql(\"string\");",
+          "    pm.expect(requestId.length > 0).to.eql(true);",
+          "});",
+          "if (pm.response.code >= 400) {",
+          "    pm.test(\"Spójny format błędu bez stack trace\", function () {",
+          "        const body = pm.response.json();",
+          "        pm.expect(Object.keys(body)).to.eql([\"error\"]);",
+          "        pm.expect(typeof body.error.code).to.eql(\"string\");",
+          "        pm.expect(typeof body.error.message).to.eql(\"string\");",
+          "        pm.expect(body.error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
+          "        pm.expect(Object.keys(body.error).every(key => [\"code\", \"message\", \"details\", \"requestId\"].includes(key))).to.eql(true);",
+          "        pm.expect(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")).to.eql(true);",
+          "    });",
+          "}"
+        ]
+      }
     }
   ]
 }

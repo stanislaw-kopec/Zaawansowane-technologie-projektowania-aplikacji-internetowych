@@ -1,0 +1,31 @@
+Zapis rzeczywistego testu API - zadanie 3
+GET /api/debug/crash
+X-Request-Id: lab2-task3-crash
+
+HTTP 500
+X-Request-Id: lab2-task3-crash
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Internal server error",
+    "requestId": "lab2-task3-crash"
+  }
+}
+
+Log serwera (szczegoly bledu):
+[lab2-task3-crash] GET /api/debug/crash Error: boom
+    at D:\zawansowane-aplikacje-internetowe\lab2\src\app.js:24:19
+    at Layer.handleRequest (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\lib\layer.js:152:17)
+    at next (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\lib\route.js:157:13)
+    at Route.dispatch (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\lib\route.js:117:3)
+    at handle (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\index.js:435:11)
+    at Layer.handleRequest (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\lib\layer.js:152:17)
+    at D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\index.js:295:15
+    at processParams (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\index.js:582:12)
+    at next (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\router\index.js:291:5)
+    at read (D:\zawansowane-aplikacje-internetowe\lab2\node_modules\body-parser\lib\read.js:53:5)
+
+Log serwera (zakonczenie zadania):
+[lab2-task3-crash] GET /api/debug/crash -> 500 (0.4 ms)
+
+Odtworzenie: npm --prefix lab2 run start:debug, potem zadanie 6.04 w aktualnej kolekcji Postmana.

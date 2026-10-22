@@ -1,4 +1,5 @@
-const AppError = require("../../errors/AppError");
+const NotFoundError = require("../../errors/NotFoundError");
+const ConflictError = require("../../errors/ConflictError");
 
 function createReservationsService({ roomsRepository, reservationsRepository }) {
     return {
@@ -7,15 +8,15 @@ function createReservationsService({ roomsRepository, reservationsRepository }) 
         },
         async createReservation(input) {
             const room = await roomsRepository.findById(input.roomId);
-            if (!room) throw new AppError("Room not found", 404);
+            if (!room) throw new NotFoundError("Room");
             if (input.participants > room.capacity) {
-                throw new AppError("Room capacity exceeded", 409);
+                throw new ConflictError("Room capacity exceeded", "ROOM_CAPACITY_EXCEEDED");
             }
             return reservationsRepository.create({ ...input, status: "CONFIRMED" });
         },
         async cancelReservation(id) {
             const reservation = await reservationsRepository.findById(id);
-            if (!reservation) throw new AppError("Reservation not found", 404);
+            if (!reservation) throw new NotFoundError("Reservation");
             return reservationsRepository.updateStatus(id, "CANCELLED");
         }
     };

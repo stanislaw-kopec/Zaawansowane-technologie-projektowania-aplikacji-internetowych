@@ -1,0 +1,1398 @@
+{
+  "info": {
+    "name": "Room Booking API — lab1",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Kolekcja do wszystkich pięciu zadań Room Booking API. Uruchom serwer: node lab1/server.js (z katalogu głównego repozytorium). Domyślny adres: http://localhost:3000. Uruchom całą kolekcję po kolei w Runnerze, 1 iteracja. Nie jest potrzebny osobny plik środowiska. Żądania 2.01 i 2.02 zapisują ID używane w folderach 4 i 5. Każdy pełny przebieg tworzy trzy nowe rezerwacje i anuluje pierwszą. Restart serwera usuwa dane; po restarcie uruchom kolekcję od początku. Odpowiedzi 400, 404 i 409 są oczekiwanym wynikiem scenariuszy błędów i powinny mieć zielone testy."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string",
+      "description": "Adres działającego serwera bez końcowego ukośnika."
+    },
+    {
+      "key": "reservationId",
+      "value": "",
+      "type": "string",
+      "description": "Ustawiane automatycznie przez 2.01; używane przy anulowaniu."
+    },
+    {
+      "key": "secondReservationId",
+      "value": "",
+      "type": "string",
+      "description": "Ustawiane automatycznie przez 2.02; używane przy filtrowaniu."
+    },
+    {
+      "key": "createdReservation",
+      "value": "",
+      "type": "string",
+      "description": "Odpowiedź z 2.01, używana do sprawdzenia, że anulowanie zmienia tylko status."
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "(() => {",
+          "    pm.test(\"Odpowiedź ma format JSON\", function () {",
+          "        pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+          "    });",
+          "})();"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sale",
+      "description": "Zadanie 1: lista minimum czterech sal, pojedyncza sala i błąd 404.",
+      "item": [
+        {
+          "name": "1.01 Wszystkie sale — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "Zwraca co najmniej cztery sale z polami id, name i capacity."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Lista zawiera minimum cztery sale\", function () {",
+                  "        pm.expect(responseBody).to.be.an(\"array\");",
+                  "        pm.expect(responseBody.length).to.be.at.least(4);",
+                  "    });",
+                  "    pm.test(\"Sale mają poprawne pola i unikalne ID\", function () {",
+                  "        responseBody.forEach(function (room) {",
+                  "            pm.expect(Number.isInteger(room.id) && room.id > 0).to.equal(true);",
+                  "            pm.expect(room.name).to.be.a(\"string\").and.not.empty;",
+                  "            pm.expect(room.capacity).to.be.a(\"number\").and.above(0);",
+                  "        });",
+                  "        pm.expect(new Set(responseBody.map(room => room.id)).size).to.equal(responseBody.length);",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.02 Sala A101 — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "1"
+              ]
+            },
+            "description": "Sala nr 1 ma pojemność 30 miejsc."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Odpowiedź zawiera salę A101\", function () {",
+                  "        pm.expect(pm.response.json()).to.include({ id: 1, name: \"A101\", capacity: 30 });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.03 Nieistniejąca sala — 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/rooms/999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "999"
+              ]
+            },
+            "description": "Przykład obsłużonego błędu do sprawozdania."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"Room not found\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Tworzenie rezerwacji i walidacja",
+      "description": "Najpierw wyślij 2.01 i 2.02. Testy zapiszą ID do zmiennych kolekcji używanych w zadaniach 4 i 5.",
+      "item": [
+        {
+          "name": "2.01 Utwórz rezerwację sali 1 — 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Zapisuje reservationId i pełną odpowiedź w createdReservation. Ta rezerwacja zostanie anulowana w folderze 5.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.collectionVariables.unset(\"reservationId\");",
+                  "    pm.collectionVariables.unset(\"createdReservation\");",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Serwer nadaje dodatnie, całkowite ID\", function () {",
+                  "        pm.expect(Number.isInteger(responseBody.id) && responseBody.id > 0).to.equal(true);",
+                  "    });",
+                  "    pm.test(\"Zapisane dane i status CONFIRMED są poprawne\", function () {",
+                  "        pm.expect(responseBody).to.deep.equal({",
+                  "            ...JSON.parse(pm.request.body.raw),",
+                  "            id: responseBody.id,",
+                  "            status: \"CONFIRMED\"",
+                  "        });",
+                  "    });",
+                  "    if (pm.response.code === 201 && Number.isInteger(responseBody.id) && responseBody.id > 0) {",
+                  "        pm.collectionVariables.set(\"reservationId\", String(responseBody.id));",
+                  "        pm.collectionVariables.set(\"createdReservation\", JSON.stringify(responseBody));",
+                  "    }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.02 Utwórz rezerwację sali 2 — 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Zapisuje secondReservationId. Pozwala sprawdzić filtrowanie i upewnić się, że anulowanie innej rezerwacji jej nie zmienia.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Anna Nowak\",\n  \"participants\": 10,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.collectionVariables.unset(\"secondReservationId\");",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Serwer nadaje dodatnie, całkowite ID\", function () {",
+                  "        pm.expect(Number.isInteger(responseBody.id) && responseBody.id > 0).to.equal(true);",
+                  "    });",
+                  "    pm.test(\"Zapisane dane i status CONFIRMED są poprawne\", function () {",
+                  "        pm.expect(responseBody).to.deep.equal({",
+                  "            ...JSON.parse(pm.request.body.raw),",
+                  "            id: responseBody.id,",
+                  "            status: \"CONFIRMED\"",
+                  "        });",
+                  "    });",
+                  "    if (pm.response.code === 201 && Number.isInteger(responseBody.id) && responseBody.id > 0) {",
+                  "        pm.collectionVariables.set(\"secondReservationId\", String(responseBody.id));",
+                  "    }",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.03 Brak roomId — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Brak wymaganego pola roomId musi zwrócić 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"roomId must be a positive integer\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.04 Brak reservedBy — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Brak wymaganego pola reservedBy musi zwrócić 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"reservedBy is required\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.05 Brak participants — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Brak wymaganego pola participants musi zwrócić 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"participants must be a number greater than 0\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.06 Brak date — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Brak wymaganego pola date musi zwrócić 400 Bad Request.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"date is required\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.07 Zero uczestników — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Liczba uczestników musi być większa od zera.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"participants must be a number greater than 0\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.08 Ujemna liczba uczestników — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Ujemna liczba uczestników jest niepoprawna.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"participants must be a number greater than 0\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.09 Uczestnicy jako tekst — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "participants musi być liczbą JSON, bez cudzysłowów.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"20\",\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"participants must be a number greater than 0\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.10 Puste nazwisko — 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Same spacje nie są poprawną wartością reservedBy.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"   \",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 400\", function () {",
+                  "        pm.response.to.have.status(400);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"reservedBy is required\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2.11 Rezerwacja nieistniejącej sali — 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Pozostałe pola są poprawne; wskazana sala nie istnieje.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"Room not found\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Pojemność sali",
+      "description": "Zadanie 3: sala A101 ma 30 miejsc. 40 uczestników powoduje konflikt, dokładnie 30 jest dozwolone.",
+      "item": [
+        {
+          "name": "3.01 Przekroczenie pojemności: 40 > 30 — 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Rezerwacja nie może zostać zapisana. Przykład reguły biznesowej do sprawozdania.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 40,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 409\", function () {",
+                  "        pm.response.to.have.status(409);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"Room capacity exceeded\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.02 Dokładnie 30 uczestników — 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Wartość równa pojemności sali jest dozwolona. Nie nadpisuje reservationId z żądania 2.01.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 30,\n  \"date\": \"2026-10-10\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 201\", function () {",
+                  "        pm.response.to.have.status(201);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Serwer nadaje dodatnie, całkowite ID\", function () {",
+                  "        pm.expect(Number.isInteger(responseBody.id) && responseBody.id > 0).to.equal(true);",
+                  "    });",
+                  "    pm.test(\"Zapisane dane i status CONFIRMED są poprawne\", function () {",
+                  "        pm.expect(responseBody).to.deep.equal({",
+                  "            ...JSON.parse(pm.request.body.raw),",
+                  "            id: responseBody.id,",
+                  "            status: \"CONFIRMED\"",
+                  "        });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Lista i filtrowanie rezerwacji",
+      "description": "Uruchom wcześniej żądania 2.01 i 2.02. Testy sprawdzają obecność ich aktualnych ID, bez zakładania stałej liczby rezerwacji.",
+      "item": [
+        {
+          "name": "4.01 Wszystkie rezerwacje — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Bez roomId API zwraca wszystkie zapisane rezerwacje."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Odpowiedź jest tablicą\", function () {",
+                  "        pm.expect(responseBody).to.be.an(\"array\");",
+                  "    });",
+                  "    pm.test(\"Lista zawiera obie utworzone rezerwacje\", function () {",
+                  "        const ids = responseBody.map(reservation => reservation.id);",
+                  "        pm.expect(ids).to.include(Number(pm.collectionVariables.get(\"reservationId\")));",
+                  "        pm.expect(ids).to.include(Number(pm.collectionVariables.get(\"secondReservationId\")));",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.02 Rezerwacje sali 1 — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?roomId=1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "roomId",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Zwraca wyłącznie rezerwacje sali 1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Odpowiedź jest tablicą\", function () {",
+                  "        pm.expect(responseBody).to.be.an(\"array\");",
+                  "    });",
+                  "    pm.test(\"Wszystkie wyniki dotyczą sali 1\", function () {",
+                  "        pm.expect(responseBody.every(reservation => reservation.roomId === 1)).to.equal(true);",
+                  "    });",
+                  "    pm.test(\"Lista zawiera przygotowaną rezerwację tej sali\", function () {",
+                  "        const id = Number(pm.collectionVariables.get(\"reservationId\"));",
+                  "        pm.expect(responseBody.some(reservation => reservation.id === id)).to.equal(true);",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.03 Rezerwacje sali 2 — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?roomId=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "roomId",
+                  "value": "2"
+                }
+              ]
+            },
+            "description": "Zwraca wyłącznie rezerwacje sali 2."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Odpowiedź jest tablicą\", function () {",
+                  "        pm.expect(responseBody).to.be.an(\"array\");",
+                  "    });",
+                  "    pm.test(\"Wszystkie wyniki dotyczą sali 2\", function () {",
+                  "        pm.expect(responseBody.every(reservation => reservation.roomId === 2)).to.equal(true);",
+                  "    });",
+                  "    pm.test(\"Lista zawiera przygotowaną rezerwację tej sali\", function () {",
+                  "        const id = Number(pm.collectionVariables.get(\"secondReservationId\"));",
+                  "        pm.expect(responseBody.some(reservation => reservation.id === id)).to.equal(true);",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4.04 Brak pasujących rezerwacji — 200 i []",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations?roomId=999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ],
+              "query": [
+                {
+                  "key": "roomId",
+                  "value": "999"
+                }
+              ]
+            },
+            "description": "Dla nieistniejącej sali nie ma rezerwacji. Lista powinna być pusta, a status wynosić 200, nie 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Brak wyników to pusta tablica\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal([]);",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Anulowanie rezerwacji",
+      "description": "Uruchom wcześniej 2.01 i 2.02. ID podstawia się automatycznie. Żądania PATCH nie wymagają body.",
+      "item": [
+        {
+          "name": "5.01 Anuluj utworzoną rezerwację — 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ]
+            },
+            "description": "Zmienia status rezerwacji utworzonej w 2.01 na CANCELLED. Rekord pozostaje w tablicy."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    if (!pm.collectionVariables.get(\"reservationId\") || !pm.collectionVariables.get(\"createdReservation\")) {",
+                  "        throw new Error(\"Najpierw wyślij żądanie 2.01, aby utworzyć rezerwację i zapisać jej ID.\");",
+                  "    }",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Zmieniono tylko status na CANCELLED\", function () {",
+                  "        const original = JSON.parse(pm.collectionVariables.get(\"createdReservation\"));",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ ...original, status: \"CANCELLED\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.02 Ponownie anuluj tę samą rezerwację — 200",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/{{reservationId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "{{reservationId}}",
+                "cancel"
+              ]
+            },
+            "description": "Ponowne anulowanie zwraca tę samą rezerwację ze statusem CANCELLED."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    if (!pm.collectionVariables.get(\"reservationId\") || !pm.collectionVariables.get(\"createdReservation\")) {",
+                  "        throw new Error(\"Najpierw wyślij żądanie 2.01, aby utworzyć rezerwację i zapisać jej ID.\");",
+                  "    }",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    pm.test(\"Zmieniono tylko status na CANCELLED\", function () {",
+                  "        const original = JSON.parse(pm.collectionVariables.get(\"createdReservation\"));",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ ...original, status: \"CANCELLED\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.03 Anuluj nieistniejącą rezerwację — 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations/999999999/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations",
+                "999999999",
+                "cancel"
+              ]
+            },
+            "description": "Przykład błędu dla nieistniejącego ID rezerwacji."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 404\", function () {",
+                  "        pm.response.to.have.status(404);",
+                  "    });",
+                  "    pm.test(\"Czytelny komunikat błędu\", function () {",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"Reservation not found\" });",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5.04 Sprawdź listę po anulowaniu — 200",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reservations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reservations"
+              ]
+            },
+            "description": "Anulowana rezerwacja nadal istnieje, a rezerwacja sali 2 pozostaje potwierdzona."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    if (!pm.collectionVariables.get(\"reservationId\") || !pm.collectionVariables.get(\"createdReservation\")) {",
+                  "        throw new Error(\"Najpierw wyślij żądanie 2.01, aby utworzyć rezerwację i zapisać jej ID.\");",
+                  "    }",
+                  "})();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "(() => {",
+                  "    pm.test(\"Status HTTP 200\", function () {",
+                  "        pm.response.to.have.status(200);",
+                  "    });",
+                  "    const responseBody = pm.response.json();",
+                  "    pm.test(\"Odpowiedź jest tablicą\", function () {",
+                  "        pm.expect(responseBody).to.be.an(\"array\");",
+                  "    });",
+                  "    pm.test(\"Anulowana rezerwacja pozostała na liście\", function () {",
+                  "        const original = JSON.parse(pm.collectionVariables.get(\"createdReservation\"));",
+                  "        const cancelled = responseBody.find(reservation => reservation.id === original.id);",
+                  "        pm.expect(cancelled).to.deep.equal({ ...original, status: \"CANCELLED\" });",
+                  "    });",
+                  "    pm.test(\"Druga rezerwacja nadal ma status CONFIRMED\", function () {",
+                  "        const id = Number(pm.collectionVariables.get(\"secondReservationId\"));",
+                  "        const other = responseBody.find(reservation => reservation.id === id);",
+                  "        pm.expect(other).to.be.an(\"object\");",
+                  "        pm.expect(other.status).to.equal(\"CONFIRMED\");",
+                  "    });",
+                  "})();"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

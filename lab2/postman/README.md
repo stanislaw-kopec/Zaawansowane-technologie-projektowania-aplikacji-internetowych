@@ -7,10 +7,10 @@ Plik `Room-Booking-API.postman_collection.json` zawiera 24 żądania z automatyc
 1. W terminalu, w głównym katalogu repozytorium, uruchom serwer:
 
    ```powershell
-   node lab1/server.js
+   node lab2/src/server.js
    ```
 
-   Jeśli uruchamiasz projekt na nowym komputerze, najpierw wykonaj `npm ci` w katalogu `lab1`.
+   Jeśli uruchamiasz projekt na nowym komputerze, najpierw wykonaj `npm ci` w katalogu `lab2`.
 
 2. W Postmanie wybierz **Import** i wskaż `Room-Booking-API.postman_collection.json`.
 3. W zmiennych kolekcji sprawdź `baseUrl`: domyślnie `http://localhost:3000`.

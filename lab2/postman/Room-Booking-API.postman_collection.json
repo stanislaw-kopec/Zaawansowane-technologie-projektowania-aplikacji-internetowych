@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Room Booking API — lab1",
+    "name": "Room Booking API - lab2 task 1",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Kolekcja do wszystkich pięciu zadań Room Booking API. Uruchom serwer: node lab1/server.js (z katalogu głównego repozytorium). Domyślny adres: http://localhost:3000. Uruchom całą kolekcję po kolei w Runnerze, 1 iteracja. Nie jest potrzebny osobny plik środowiska. Żądania 2.01 i 2.02 zapisują ID używane w folderach 4 i 5. Każdy pełny przebieg tworzy trzy nowe rezerwacje i anuluje pierwszą. Restart serwera usuwa dane; po restarcie uruchom kolekcję od początku. Odpowiedzi 400, 404 i 409 są oczekiwanym wynikiem scenariuszy błędów i powinny mieć zielone testy."
+    "description": "Kolekcja do endpointów z lab1 po przebudowie w zadaniu 1 lab2. Uruchom serwer: node lab2/src/server.js (z katalogu głównego repozytorium). Domyślny adres: http://localhost:3000. Uruchom całą kolekcję po kolei w Runnerze, 1 iteracja. Nie jest potrzebny osobny plik środowiska. Żądania 2.01 i 2.02 zapisują ID używane w folderach 4 i 5. Każdy pełny przebieg tworzy trzy nowe rezerwacje i anuluje pierwszą. Restart serwera usuwa dane; po restarcie uruchom kolekcję od początku. Odpowiedzi 400, 404 i 409 są oczekiwanym wynikiem scenariuszy błędów i powinny mieć zielone testy."
   },
   "variable": [
     {
@@ -218,7 +218,7 @@
             "description": "Zapisuje reservationId i pełną odpowiedź w createdReservation. Ta rezerwacja zostanie anulowana w folderze 5.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -296,7 +296,7 @@
             "description": "Zapisuje secondReservationId. Pozwala sprawdzić filtrowanie i upewnić się, że anulowanie innej rezerwacji jej nie zmienia.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Anna Nowak\",\n  \"participants\": 10,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 2,\n  \"reservedBy\": \"Anna Nowak\",\n  \"participants\": 10,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -372,7 +372,7 @@
             "description": "Brak wymaganego pola roomId musi zwrócić 400 Bad Request.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -426,7 +426,7 @@
             "description": "Brak wymaganego pola reservedBy musi zwrócić 400 Bad Request.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -480,7 +480,7 @@
             "description": "Brak wymaganego pola participants musi zwrócić 400 Bad Request.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -508,7 +508,7 @@
           ]
         },
         {
-          "name": "2.06 Brak date — 400",
+          "name": "2.06 Brak startTime — 400",
           "request": {
             "method": "POST",
             "header": [
@@ -531,10 +531,10 @@
                 "reservations"
               ]
             },
-            "description": "Brak wymaganego pola date musi zwrócić 400 Bad Request.",
+            "description": "Brak wymaganego pola startTime musi zwrócić 400 Bad Request.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -553,7 +553,7 @@
                   "        pm.response.to.have.status(400);",
                   "    });",
                   "    pm.test(\"Czytelny komunikat błędu\", function () {",
-                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"date is required\" });",
+                  "        pm.expect(pm.response.json()).to.deep.equal({ message: \"startTime must be an ISO 8601 datetime with timezone\" });",
                   "    });",
                   "})();"
                 ]
@@ -588,7 +588,7 @@
             "description": "Liczba uczestników musi być większa od zera.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 0,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -642,7 +642,7 @@
             "description": "Ujemna liczba uczestników jest niepoprawna.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": -1,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -696,7 +696,7 @@
             "description": "participants musi być liczbą JSON, bez cudzysłowów.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"20\",\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": \"20\",\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -750,7 +750,7 @@
             "description": "Same spacje nie są poprawną wartością reservedBy.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"   \",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"   \",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -804,7 +804,7 @@
             "description": "Pozostałe pola są poprawne; wskazana sala nie istnieje.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 999,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -864,7 +864,7 @@
             "description": "Rezerwacja nie może zostać zapisana. Przykład reguły biznesowej do sprawozdania.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 40,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 40,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -918,7 +918,7 @@
             "description": "Wartość równa pojemności sali jest dozwolona. Nie nadpisuje reservationId z żądania 2.01.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 30,\n  \"date\": \"2026-10-10\"\n}",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 30,\n  \"startTime\": \"2026-11-10T10:00:00Z\",\n  \"endTime\": \"2026-11-10T12:00:00Z\"\n}",
               "options": {
                 "raw": {
                   "language": "json"

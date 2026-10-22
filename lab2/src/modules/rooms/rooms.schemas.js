@@ -1,6 +1,7 @@
-// Reczne parsowanie z lab1; schematy Zod dodamy w zadaniu 2.
-function parseRoomId(value) {
-    return Number(value);
-}
+const { z } = require("zod");
 
-module.exports = { parseRoomId };
+const idParams = z.object({
+    id: z.coerce.number().int().positive()
+});
+
+module.exports = { idParams };

@@ -1,4 +1,3 @@
-const { parseRoomId } = require("./rooms.schemas");
 const { toRoomResponse } = require("./rooms.mapper");
 
 function createRoomsController(roomsService) {
@@ -8,7 +7,7 @@ function createRoomsController(roomsService) {
             res.json(rooms.map(toRoomResponse));
         },
         async get(req, res) {
-            const room = await roomsService.getRoom(parseRoomId(req.params.id));
+            const room = await roomsService.getRoom(req.validated.params.id);
             res.json(toRoomResponse(room));
         }
     };

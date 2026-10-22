@@ -1,51 +1,40 @@
-# Room Booking API — kolekcja Postmana
+# Room Booking API - Postman po zadaniu 2
 
-Plik `Room-Booking-API.postman_collection.json` zawiera 24 żądania z automatycznymi testami. Foldery odpowiadają zadaniom 1–5. Osobny plik środowiska nie jest potrzebny.
+Aktualna kolekcja: `Room-Booking-API.postman_collection.json` (56 żądań z automatycznymi testami).
+Archiwum stanu po zadaniu 1: `Lab2-Task1.postman_collection.json`.
+Archiwalna kolekcja służy do poprzedniej wersji kodu; część jej oczekiwań walidacyjnych nie pasuje do zadania 2.
 
 ## Uruchomienie
 
-1. W terminalu, w głównym katalogu repozytorium, uruchom serwer:
+1. Z głównego katalogu repozytorium wykonaj `npm --prefix lab2 ci`, a następnie `npm --prefix lab2 start`.
+2. W Postmanie wybierz **Import** i aktualny plik kolekcji.
+3. Zmienna kolekcji `baseUrl` ma domyślnie wartość `http://localhost:3000`.
+4. Uruchom całą kolekcję w **Collection Runnerze**, w podanej kolejności, jedna iteracja.
+5. Oczekiwane odpowiedzi 400, 404 i 409 oznaczają poprawne działanie scenariuszy błędów. Sprawdzaj wyniki testów, nie sam status.
 
-   ```powershell
-   node lab2/src/server.js
-   ```
+Osobny plik środowiska nie jest potrzebny. Jeśli poprzedni serwer nadal działa, zatrzymaj go i uruchom ponownie po zmianie kodu.
 
-   Jeśli uruchamiasz projekt na nowym komputerze, najpierw wykonaj `npm ci` w katalogu `lab2`.
+## Foldery
 
-2. W Postmanie wybierz **Import** i wskaż `Room-Booking-API.postman_collection.json`.
-3. W zmiennych kolekcji sprawdź `baseUrl`: domyślnie `http://localhost:3000`.
-4. Uruchom całą kolekcję w **Collection Runnerze**: wszystkie żądania zaznaczone, kolejność bez zmian, **1 iteracja**.
-5. Sprawdź wyniki testów. Odpowiedzi **400**, **404** i **409** w nazwanych scenariuszach błędów są oczekiwane — ich testy powinny przejść.
-
-Przy korzystaniu z przeglądarkowej wersji Postmana wybierz Desktop Agent do połączenia z lokalnym API. W aplikacji desktopowej można wysyłać żądania bezpośrednio.
-
-## Co jest sprawdzane
-
-| Folder | Scenariusze |
+| Folder | Co sprawdza |
 | --- | --- |
-| 1. Sale | Lista minimum czterech sal, sala nr 1, nieistniejąca sala |
-| 2. Tworzenie rezerwacji i walidacja | Dwie poprawne rezerwacje, brak każdego wymaganego pola, zero i ujemna liczba uczestników, liczba przesłana jako tekst, puste nazwisko, nieistniejąca sala |
-| 3. Pojemność sali | Odrzucenie 40 uczestników przy 30 miejscach oraz akceptacja dokładnie 30 |
-| 4. Lista i filtrowanie | Wszystkie rezerwacje, filtrowanie po salach 1 i 2, pusta tablica dla braku wyników |
-| 5. Anulowanie | Anulowanie, ponowne anulowanie, nieistniejące ID, sprawdzenie listy po anulowaniu |
+| 1 | Endpointy z lab1, trim nazwiska, daty z Z i offsetem, filtrowanie po roomId |
+| 2 | Niepoprawne ID w params i roomId w query, także puste i powtórzone query |
+| 3 | Brakujące pola, błędne typy, liczby ułamkowe, długość nazwiska, daty, odrzucanie status i id |
+| 4 | Jedno żądanie z czterema błędami, pełne details i requestId |
+| 5 | Brak sali, przekroczenie pojemności, anulowanie i ponowne anulowanie |
 
-## Ręczne wysyłanie żądań
+## Testowanie ręczne
 
-Otwórz wybrane żądanie i kliknij **Send**. Body i nagłówki są już przygotowane. Dla żądań PATCH anulujących rezerwację body nie jest potrzebne.
+Najpierw wyślij **1.03**, które zapisuje `reservationId`. Potem możesz wywoływać **5.04** i **5.05**.
+Po restarcie serwera wykonaj **1.03** ponownie. Cała kolekcja może być uruchamiana wielokrotnie bez restartu: nie zakłada stałej liczby rezerwacji ani stałego ID.
 
-Przed testowaniem folderów 4 i 5 wyślij kolejno **2.01** i **2.02**. Ich skrypty zapisują `reservationId`, `secondReservationId` oraz kopię pierwszej rezerwacji. ID w adresie anulowania zostanie podstawione automatycznie.
+## Materiał do sprawozdania
 
-Żądanie **5.02** wyślij po **5.01**, a **5.04** po anulowaniu. Po restarcie serwera uruchom kolekcję od początku albo ponownie wyślij **2.01** i **2.02**, ponieważ dane API są przechowywane tylko w pamięci.
+Żądanie **4.01** zawiera krótkie nazwisko, zero uczestników, niepoprawne endTime i niedozwolone pole status.
+Pokaż body żądania, odpowiedź 400 z pełnym details oraz zgodne requestId w JSON i nagłówku X-Request-Id.
 
-Każdy pełny przebieg tworzy trzy rezerwacje i anuluje pierwszą z nich. Kolekcję można uruchamiać ponownie na tym samym serwerze: pobiera nowe ID i nie zakłada stałej liczby zapisanych rezerwacji.
+## Zakres aktualnego etapu
 
-## Materiały do sprawozdania
-
-Przydatne screenshoty: **1.01**, **1.02**, **2.01**, **2.07**, **3.01**, **3.02**, **4.02**, **4.04** i **5.01**. Na zrzucie pokaż metodę, adres, body żądania (jeśli występuje), status HTTP i odpowiedź JSON. Zapisz też podsumowanie pełnego przebiegu w Runnerze.
-
-## Dokumentacja Postmana
-
-- [Import kolekcji](https://learning.postman.com/docs/getting-started/importing-and-exporting/importing-data/)
-- [Collection Runner](https://learning.postman.com/docs/tests-and-scripts/running-collections/intro-to-collection-runs/)
-- [Zmienne używane w skryptach](https://learning.postman.com/docs/tests-and-scripts/write-scripts/postman-sandbox-reference/pm-variables/)
-
+Nie ma jeszcze kontroli nakładania przedziałów ani ograniczeń długości/czasu rezerwacji z zadania 4.
+Zadanie 3 ujednolici pozostałe błędy i doda logowanie. Obecnie format `error.code/details/requestId` dotyczy błędów walidacji.

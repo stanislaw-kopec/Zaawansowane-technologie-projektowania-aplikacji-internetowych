@@ -1,7 +1,18 @@
 const AppError = require("../errors/AppError");
+const ValidationError = require("../errors/ValidationError");
 
 function errorHandler(error, req, res, next) {
     if (res.headersSent) return next(error);
+    if (error instanceof ValidationError) {
+        return res.status(error.statusCode).json({
+            error: {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                requestId: req.id
+            }
+        });
+    }
     if (error instanceof AppError) {
         return res.status(error.statusCode).json({ message: error.message });
     }

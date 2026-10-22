@@ -5,6 +5,12 @@ const ValidationError = require("../../errors/ValidationError");
 const MIN_DURATION_MS = 15 * 60 * 1000;
 const MAX_DURATION_MS = 8 * 60 * 60 * 1000;
 
+// A: dozwolone przejscia stanow rezerwacji.
+const ALLOWED_TRANSITIONS = {
+    CONFIRMED: ["CANCELLED"],
+    CANCELLED: []
+};
+
 function createReservationsService({ roomsRepository, reservationsRepository, now = () => new Date() }) {
     return {
         async listReservations(filters) {
@@ -46,7 +52,20 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
         async cancelReservation(id) {
             const reservation = await reservationsRepository.findById(id);
             if (!reservation) throw new NotFoundError("Reservation");
-            return reservationsRepository.updateStatus(id, "CANCELLED");
+            // Ponowienie anulowania nie zmienia danych, nawet gdy termin juz minal.
+            if (reservation.status === "CANCELLED") return reservation;
+            if (!ALLOWED_TRANSITIONS[reservation.status]?.includes("CANCELLED")) {
+                throw new ConflictError(
+                    `Cannot change status from ${reservation.status} to CANCELLED`,
+                    "INVALID_STATUS_TRANSITION"
+                );
+            }
+
+            const cancelledAt = now();
+            if (new Date(reservation.startTime).getTime() <= cancelledAt.getTime()) {
+                throw new ConflictError("Reservation has already started", "RESERVATION_ALREADY_STARTED");
+            }
+            return reservationsRepository.updateStatus(id, "CANCELLED", cancelledAt);
         }
     };
 }

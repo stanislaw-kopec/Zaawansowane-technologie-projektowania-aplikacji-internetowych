@@ -9,7 +9,9 @@ function createReservationsController(reservationsService) {
         async create(req, res) {
             const input = req.validated.body;
             const reservation = await reservationsService.createReservation(input);
-            res.status(201).json(toReservationResponse(reservation));
+            res.location(`/api/reservations/${reservation.id}`)
+                .status(201)
+                .json(toReservationResponse(reservation));
         },
         async cancel(req, res) {
             const reservation = await reservationsService.cancelReservation(req.validated.params.id);

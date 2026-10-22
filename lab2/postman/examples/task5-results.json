@@ -1,0 +1,487 @@
+{
+  "description": "Zadanie 5: część A - anulowanie; część B - response DTO. Rzeczywiste wyniki HTTP.",
+  "scenarios": [
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.01 Utwórz przyszłą rezerwację",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "X-Request-Id": "eb1bc5c0-3f72-40dc-9fb0-122580c6a792",
+          "Location": "/api/reservations/11"
+        },
+        "body": {
+          "id": 11,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:56:50.889Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.02 Anuluj i zapisz cancelledAt",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/11/cancel"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "df568012-27f8-4e0a-b69b-7a74dc31bd37"
+        },
+        "body": {
+          "id": 11,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:56:50.889Z",
+          "cancelledAt": "2026-10-22T18:56:50.890Z"
+        }
+      }
+    },
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.03 Ponowne anulowanie: identyczne dane i cancelledAt",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/11/cancel"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "fe12f887-50cc-433a-94e3-d4762676d2fe"
+        },
+        "body": {
+          "id": 11,
+          "roomId": 1,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:56:50.889Z",
+          "cancelledAt": "2026-10-22T18:56:50.890Z"
+        }
+      }
+    },
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.04 Znajdź rozpoczętą rezerwację z seed",
+      "request": {
+        "method": "GET",
+        "path": "/api/reservations?roomId=1"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "ec1eb91b-09e0-41ac-82cb-9d8412025160"
+        },
+        "body": [
+          {
+            "id": 1,
+            "roomId": 1,
+            "reservedBy": "Started reservation (seed)",
+            "participants": 5,
+            "startTime": "2026-10-22T16:56:50.655Z",
+            "endTime": "2026-10-22T17:56:50.655Z",
+            "status": "CONFIRMED",
+            "createdAt": "2026-10-22T18:56:50.655Z",
+            "cancelledAt": null
+          },
+          {
+            "id": 2,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-05T09:00:00.000Z",
+            "endTime": "2026-11-05T11:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.751Z",
+            "cancelledAt": "2026-10-22T18:56:50.835Z"
+          },
+          {
+            "id": 4,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.850Z",
+            "cancelledAt": "2026-10-22T18:56:50.862Z"
+          },
+          {
+            "id": 5,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T12:00:00.000Z",
+            "endTime": "2026-11-07T13:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.851Z",
+            "cancelledAt": "2026-10-22T18:56:50.864Z"
+          },
+          {
+            "id": 6,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T08:00:00.000Z",
+            "endTime": "2026-11-07T10:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.853Z",
+            "cancelledAt": "2026-10-22T18:56:50.865Z"
+          },
+          {
+            "id": 8,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.863Z",
+            "cancelledAt": "2026-10-22T18:56:50.868Z"
+          },
+          {
+            "id": 9,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T10:15:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.874Z",
+            "cancelledAt": "2026-10-22T18:56:50.876Z"
+          },
+          {
+            "id": 10,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T18:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.878Z",
+            "cancelledAt": "2026-10-22T18:56:50.881Z"
+          },
+          {
+            "id": 11,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.889Z",
+            "cancelledAt": "2026-10-22T18:56:50.890Z"
+          }
+        ]
+      }
+    },
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.05 Odmowa anulowania rozpoczętej rezerwacji",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/1/cancel"
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "X-Request-Id": "82cf8e08-911c-4873-ae05-31d19a8559b3"
+        },
+        "body": {
+          "error": {
+            "code": "RESERVATION_ALREADY_STARTED",
+            "message": "Reservation has already started",
+            "requestId": "82cf8e08-911c-4873-ae05-31d19a8559b3"
+          }
+        }
+      }
+    },
+    {
+      "section": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "scenario": "9.06 Odmowa nie zmieniła statusu ani cancelledAt",
+      "request": {
+        "method": "GET",
+        "path": "/api/reservations?roomId=1"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "53fd5452-7800-408b-ab37-1e8e9c8698c5"
+        },
+        "body": [
+          {
+            "id": 1,
+            "roomId": 1,
+            "reservedBy": "Started reservation (seed)",
+            "participants": 5,
+            "startTime": "2026-10-22T16:56:50.655Z",
+            "endTime": "2026-10-22T17:56:50.655Z",
+            "status": "CONFIRMED",
+            "createdAt": "2026-10-22T18:56:50.655Z",
+            "cancelledAt": null
+          },
+          {
+            "id": 2,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-05T09:00:00.000Z",
+            "endTime": "2026-11-05T11:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.751Z",
+            "cancelledAt": "2026-10-22T18:56:50.835Z"
+          },
+          {
+            "id": 4,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.850Z",
+            "cancelledAt": "2026-10-22T18:56:50.862Z"
+          },
+          {
+            "id": 5,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T12:00:00.000Z",
+            "endTime": "2026-11-07T13:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.851Z",
+            "cancelledAt": "2026-10-22T18:56:50.864Z"
+          },
+          {
+            "id": 6,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T08:00:00.000Z",
+            "endTime": "2026-11-07T10:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.853Z",
+            "cancelledAt": "2026-10-22T18:56:50.865Z"
+          },
+          {
+            "id": 8,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.863Z",
+            "cancelledAt": "2026-10-22T18:56:50.868Z"
+          },
+          {
+            "id": 9,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T10:15:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.874Z",
+            "cancelledAt": "2026-10-22T18:56:50.876Z"
+          },
+          {
+            "id": 10,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T18:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.878Z",
+            "cancelledAt": "2026-10-22T18:56:50.881Z"
+          },
+          {
+            "id": 11,
+            "roomId": 1,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.889Z",
+            "cancelledAt": "2026-10-22T18:56:50.890Z"
+          }
+        ]
+      }
+    },
+    {
+      "section": "10. Zadanie 5 - część B: response DTO i Location",
+      "scenario": "10.01 POST: 201, Location i brak internalNote",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 3,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z"
+        }
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "X-Request-Id": "1cab054e-6b75-42a8-904c-a876ab94b7db",
+          "Location": "/api/reservations/12"
+        },
+        "body": {
+          "id": 12,
+          "roomId": 3,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CONFIRMED",
+          "createdAt": "2026-10-22T18:56:50.897Z",
+          "cancelledAt": null
+        }
+      }
+    },
+    {
+      "section": "10. Zadanie 5 - część B: response DTO i Location",
+      "scenario": "10.02 Lista: mapper nie ujawnia internalNote",
+      "request": {
+        "method": "GET",
+        "path": "/api/reservations?roomId=3"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "aac48a01-08cc-4956-8ef5-362974892469"
+        },
+        "body": [
+          {
+            "id": 12,
+            "roomId": 3,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CONFIRMED",
+            "createdAt": "2026-10-22T18:56:50.897Z",
+            "cancelledAt": null
+          }
+        ]
+      }
+    },
+    {
+      "section": "10. Zadanie 5 - część B: response DTO i Location",
+      "scenario": "10.03 Anulowanie: mapper nie ujawnia internalNote",
+      "request": {
+        "method": "PATCH",
+        "path": "/api/reservations/12/cancel"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "3261c631-d254-4db8-b7b1-c10d0020fec8"
+        },
+        "body": {
+          "id": 12,
+          "roomId": 3,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "status": "CANCELLED",
+          "createdAt": "2026-10-22T18:56:50.897Z",
+          "cancelledAt": "2026-10-22T18:56:50.899Z"
+        }
+      }
+    },
+    {
+      "section": "10. Zadanie 5 - część B: response DTO i Location",
+      "scenario": "10.04 Lista po anulowaniu: cancelledAt w UTC",
+      "request": {
+        "method": "GET",
+        "path": "/api/reservations?roomId=3"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "X-Request-Id": "f68eadb4-2b03-4a2a-aabf-cc396019d3ab"
+        },
+        "body": [
+          {
+            "id": 12,
+            "roomId": 3,
+            "reservedBy": "Jan Kowalski",
+            "participants": 20,
+            "startTime": "2026-11-07T10:00:00.000Z",
+            "endTime": "2026-11-07T12:00:00.000Z",
+            "status": "CANCELLED",
+            "createdAt": "2026-10-22T18:56:50.897Z",
+            "cancelledAt": "2026-10-22T18:56:50.899Z"
+          }
+        ]
+      }
+    },
+    {
+      "section": "10. Zadanie 5 - część B: response DTO i Location",
+      "scenario": "10.05 Klient nie może przesłać internalNote",
+      "request": {
+        "method": "POST",
+        "path": "/api/reservations",
+        "body": {
+          "roomId": 3,
+          "reservedBy": "Jan Kowalski",
+          "participants": 20,
+          "startTime": "2026-11-07T10:00:00.000Z",
+          "endTime": "2026-11-07T12:00:00.000Z",
+          "internalNote": "client override"
+        }
+      },
+      "response": {
+        "status": 400,
+        "headers": {
+          "X-Request-Id": "29a869af-1ce1-4f5d-815e-204bfc7b5026"
+        },
+        "body": {
+          "error": {
+            "code": "VALIDATION_ERROR",
+            "message": "Validation failed",
+            "requestId": "29a869af-1ce1-4f5d-815e-204bfc7b5026",
+            "details": [
+              {
+                "location": "body",
+                "field": "",
+                "message": "Unrecognized key: \"internalNote\""
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

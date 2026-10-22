@@ -1,7 +1,7 @@
-# Room Booking API - Postman po zadaniu 4
+# Room Booking API - Postman po zadaniu 5
 
-Aktualna kolekcja: `Room-Booking-API.postman_collection.json` (91 żądań z testami).
-Archiwa: `Lab2-Task1.postman_collection.json` `Lab2-Task2.postman_collection.json` i `Lab2-Task3.postman_collection.json`.
+Aktualna kolekcja: `Room-Booking-API.postman_collection.json` (102 żądań z testami).
+Archiwa: `Lab2-Task1.postman_collection.json` `Lab2-Task2.postman_collection.json` `Lab2-Task3.postman_collection.json` i `Lab2-Task4.postman_collection.json`.
 Archiwa pasują do wcześniejszych wersji kodu; aktualne API testuj aktualną kolekcją.
 
 ## Uruchomienie
@@ -27,6 +27,8 @@ Zwykłe `npm --prefix lab2 start` nie włącza tymczasowego endpointu `/api/debu
 | 6 | Nieznana ścieżka/metoda, niepoprawny JSON, 500, requestId oraz błędy parsera 413 i 415 |
 | 7 | Wszystkie przypadki z tabeli nakładania, identyczne przedziały i równoważne strefy czasowe |
 | 8 | Kolejność dat, granice 15 minut / 8 godzin, przeszłość oraz porządki |
+| 9 | Zadanie 5A: przyszła rezerwacja, anulowanie, idempotencja i odmowa anulowania rozpoczętej |
+| 10 | Zadanie 5B: Location, jawne response DTO, UTC i ukrycie internalNote |
 
 Testy na poziomie kolekcji sprawdzają identyfikator każdego żądania oraz wspólny format każdej odpowiedzi z błędem.
 
@@ -59,13 +61,13 @@ Każdy wpis zakończenia zawiera ID, metodę, URL, status i czas w ms. Tymczasow
 ```
 
 Walidacja dodaje `details`. Nieoczekiwany błąd ma ogólny komunikat; pełne szczegóły pojawiają się tylko w terminalu.
-Reguły czasu i nakładania są zaimplementowane w serwisie. Rozbudowane anulowanie pozostaje na zadanie 5.
+Reguły czasu i nakładania są zaimplementowane w serwisie. Anulowanie i response DTO z zadania 5 również są zaimplementowane.
 
-## Daty i powtarzalność po zadaniu 4
+## Daty i powtarzalność po zadaniu 5
 
 Żądanie **1.01** ustawia daty startowe za 14 dni. W body widzisz zmienne, które Postman podstawia przy wysyłaniu.
 Uruchom **1.01** przed ręcznymi testami pozostałych folderów.
-Pełny przebieg anuluje wszystkie utworzone przez siebie rezerwacje, więc można go powtórzyć na tym samym serwerze.
+Pełny przebieg anuluje wszystkie utworzone przez siebie rezerwacje, więc można go powtórzyć na tym samym serwerze. Startowa rezerwacja w przeszłości pozostaje aktywna — celowo nie można jej anulować.
 Po przerwanym przebiegu albo wcześniejszych ręcznych testach zrestartuj serwer, żeby usunąć kolidujące dane.
 
 Folder **7** uruchamiaj w podanej kolejności. Rezerwacja bazowa trwa 10:00-12:00; przyjęte rezerwacje stykające się z nią pozostają aktywne do końca scenariusza.
@@ -79,3 +81,18 @@ Minimum 15 minut i maksimum 8 godzin są dopuszczalne. Początek równy aktualne
 
 Z głównego katalogu repozytorium uruchom: npm --prefix lab2 test.
 Testy używają stałego zegara i nie wymagają uruchomionego serwera ani Postmana.
+
+## Zadanie 5 - część A: anulowanie
+
+Serwer automatycznie tworzy jedną rezerwację startową o nazwie `Started reservation (seed)`, która rozpoczęła się dwie godziny przed jego uruchomieniem.
+Żądanie **9.04** znajduje jej ID i zapisuje je do zmiennej; **9.05** próbuje anulować ją i oczekuje 409 `RESERVATION_ALREADY_STARTED`.
+Wykonaj **9.04** przed ręcznym wysłaniem **9.05** i **9.06**.
+Przypadki **9.01-9.03** uruchamiaj w kolejności: tworzenie, pierwsze anulowanie, ponowne anulowanie z porównaniem całej odpowiedzi, w tym `cancelledAt`.
+
+## Zadanie 5 - część B: response DTO
+
+**10.01** pokazuje 201 i nagłówek `Location: /api/reservations/{id}`. Nie dodajemy nowego endpointu GET pod ten adres — polecenie wymaga nagłówka, a przegląd rezerwacji odbywa się przez listę.
+Wszystkie poprawne odpowiedzi rezerwacji są sprawdzane globalnie: dokładny zestaw pól, daty UTC i `cancelledAt` jako null albo data.
+`internalNote` istnieje w repozytorium, ale nie jest zwracane przez mapper przy tworzeniu, listowaniu ani anulowaniu.
+Do sprawozdania użyj **9.02**, **9.03**, **9.05** i **10.01** (z widocznymi nagłówkami).
+Wyniki automatycznej weryfikacji zapisujemy w `examples/task5-results.json`.

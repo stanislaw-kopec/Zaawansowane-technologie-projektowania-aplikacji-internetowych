@@ -111,3 +111,62 @@ test("room capacity rule still applies", async () => {
     const { service } = setup();
     await assert.rejects(service.createReservation({ ...input, participants: 31 }), { code: "ROOM_CAPACITY_EXCEEDED" });
 });
+
+// Zadanie 5A: reguly anulowania i idempotencja.
+test("cancellation sets cancelledAt from injected clock", async () => {
+    const { service } = setup();
+    const reservation = await service.createReservation(input);
+    const cancelled = await service.cancelReservation(reservation.id);
+    assert.equal(cancelled.status, "CANCELLED");
+    assert.equal(cancelled.cancelledAt.toISOString(), fixedNow.toISOString());
+});
+
+test("repeated cancellation preserves all data after time has advanced", async () => {
+    let clock = new Date(fixedNow);
+    const reservationsRepository = createReservationsRepository();
+    const service = createReservationsService({ roomsRepository: createRoomsRepository(), reservationsRepository, now: () => clock });
+    const reservation = await service.createReservation(input);
+    const first = structuredClone(await service.cancelReservation(reservation.id));
+    clock = new Date("2026-12-01T00:00:00Z");
+    const repeated = await service.cancelReservation(reservation.id);
+    assert.deepEqual(repeated, first);
+});
+
+for (const startTime of ["2026-11-01T09:59:59.999Z", "2026-11-01T10:00:00Z"]) {
+    test(`cannot cancel reservation started at ${startTime}`, async () => {
+        const { service, reservationsRepository } = setup();
+        const reservation = await reservationsRepository.create({ ...input, startTime, status: "CONFIRMED" });
+        await assert.rejects(service.cancelReservation(reservation.id), { code: "RESERVATION_ALREADY_STARTED" });
+        assert.equal(reservation.status, "CONFIRMED");
+        assert.equal(reservation.cancelledAt, null);
+    });
+}
+
+test("can cancel one millisecond before start", async () => {
+    const { service, reservationsRepository } = setup();
+    const reservation = await reservationsRepository.create({
+        ...input, startTime: new Date(fixedNow.getTime() + 1).toISOString(), status: "CONFIRMED"
+    });
+    assert.equal((await service.cancelReservation(reservation.id)).status, "CANCELLED");
+});
+
+test("unexpected status cannot transition to CANCELLED", async () => {
+    const { service, reservationsRepository } = setup();
+    const reservation = await reservationsRepository.create({ ...input, status: "UNKNOWN" });
+    await assert.rejects(service.cancelReservation(reservation.id), { code: "INVALID_STATUS_TRANSITION" });
+});
+
+test("cancelling a missing reservation returns NotFoundError", async () => {
+    const { service } = setup();
+    await assert.rejects(service.cancelReservation(999), { code: "NOT_FOUND" });
+});
+
+test("seed reserves an ID and contains a past confirmed reservation", async () => {
+    const repository = createReservationsRepository({ includeStartedReservation: true });
+    const seed = (await repository.list())[0];
+    assert.equal(seed.status, "CONFIRMED");
+    assert.ok(new Date(seed.startTime).getTime() < Date.now());
+    const created = await repository.create({ ...input, status: "CONFIRMED" });
+    assert.ok(created.id > seed.id);
+    assert.equal(created.internalNote, "created via API v2");
+});

@@ -4,7 +4,7 @@ const { createReservationsRepository } = require("./modules/reservations/reserva
 
 const app = createApp({
     roomsRepository: createRoomsRepository(),
-    reservationsRepository: createReservationsRepository(),
+    reservationsRepository: createReservationsRepository({ includeStartedReservation: true }),
     enableDebugRoutes: process.argv.includes("--debug")
 });
 

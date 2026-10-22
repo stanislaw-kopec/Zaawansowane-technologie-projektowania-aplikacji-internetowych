@@ -1,8 +1,8 @@
 {
   "info": {
-    "name": "Room Booking API - Lab2 - Task4",
+    "name": "Room Booking API - Lab2 - Task5",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Stan po zadaniu 4: reguły czasu i brak nakładających się aktywnych rezerwacji. Uruchom npm --prefix lab2 run start:debug. Uruchamiaj całą kolekcję w kolejności. Żądanie 1.01 ustawia daty w przyszłości. Kolekcja sprząta własne rezerwacje. Po przerwanym przebiegu uruchom ponownie serwer."
+    "description": "Całe lab2 po zadaniu 5. Uruchom npm --prefix lab2 run start:debug. Foldery 9 i 10 odpowiadają częściom A i B zadania 5. Serwer ma jedną startową rezerwację w przeszłości; kolekcja znajduje ją po nazwie, nie zakłada stałego ID. Uruchamiaj całą kolekcję w podanej kolejności."
   },
   "variable": [
     {
@@ -3464,6 +3464,293 @@
           ]
         }
       ]
+    },
+    {
+      "name": "9. Zadanie 5 - część A: anulowanie i state machine",
+      "item": [
+        {
+          "name": "9.01 Utwórz przyszłą rezerwację",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 1,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"cancellationDemoId\", String(pm.response.json().id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.02 Anuluj i zapisz cancelledAt",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{cancellationDemoId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowanie ustawia cancelledAt\", function () {",
+                  "    pm.expect(pm.response.json().status).to.eql(\"CANCELLED\");",
+                  "    pm.expect(typeof pm.response.json().cancelledAt).to.eql(\"string\");",
+                  "});",
+                  "pm.collectionVariables.set(\"cancelledSnapshot\", JSON.stringify(pm.response.json()));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.03 Ponowne anulowanie: identyczne dane i cancelledAt",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{cancellationDemoId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Cała rezerwacja pozostaje bez zmian\", function () {",
+                  "    pm.expect(pm.response.json()).to.eql(JSON.parse(pm.collectionVariables.get(\"cancelledSnapshot\")));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.04 Znajdź rozpoczętą rezerwację z seed",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reservations?roomId=1",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "const started = pm.response.json().find(r => r.reservedBy === \"Started reservation (seed)\" && r.status === \"CONFIRMED\");",
+                  "pm.test(\"Seed istnieje i ma termin w przeszłości\", function () {",
+                  "    pm.expect(Boolean(started)).to.eql(true);",
+                  "    pm.expect(new Date(started.startTime).getTime() <= Date.now()).to.eql(true);",
+                  "});",
+                  "pm.collectionVariables.set(\"startedReservationId\", String(started.id));",
+                  "pm.collectionVariables.set(\"startedSnapshot\", JSON.stringify(started));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.05 Odmowa anulowania rozpoczętej rezerwacji",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{startedReservationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 409\", function () { pm.expect(pm.response.code).to.eql(409); });",
+                  "pm.test(\"RESERVATION_ALREADY_STARTED\", function () { pm.expect(pm.response.json().error.code).to.eql(\"RESERVATION_ALREADY_STARTED\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9.06 Odmowa nie zmieniła statusu ani cancelledAt",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reservations?roomId=1",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Rozpoczęta rezerwacja pozostaje bez zmian\", function () {",
+                  "    const row = pm.response.json().find(r => String(r.id) === pm.collectionVariables.get(\"startedReservationId\"));",
+                  "    pm.expect(row).to.eql(JSON.parse(pm.collectionVariables.get(\"startedSnapshot\")));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Zadanie 5 - część B: response DTO i Location",
+      "item": [
+        {
+          "name": "10.01 POST: 201, Location i brak internalNote",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 3,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", function () { pm.expect(pm.response.code).to.eql(201); });",
+                  "pm.collectionVariables.set(\"dtoReservationId\", String(pm.response.json().id));",
+                  "pm.test(\"internalNote nie trafia do odpowiedzi\", function () { pm.expect(\"internalNote\" in pm.response.json()).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.02 Lista: mapper nie ujawnia internalNote",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reservations?roomId=3",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Lista zawiera utworzoną rezerwację\", function () { pm.expect(pm.response.json().some(r => String(r.id) === pm.collectionVariables.get(\"dtoReservationId\"))).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.03 Anulowanie: mapper nie ujawnia internalNote",
+          "request": {
+            "method": "PATCH",
+            "url": "{{baseUrl}}/api/reservations/{{dtoReservationId}}/cancel",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });",
+                  "pm.test(\"Anulowana bez internalNote\", function () { pm.expect(pm.response.json().status).to.eql(\"CANCELLED\"); pm.expect(\"internalNote\" in pm.response.json()).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.04 Lista po anulowaniu: cancelledAt w UTC",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/reservations?roomId=3",
+            "header": []
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.expect(pm.response.code).to.eql(200); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10.05 Klient nie może przesłać internalNote",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/reservations",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomId\": 3,\n  \"reservedBy\": \"Jan Kowalski\",\n  \"participants\": 20,\n  \"startTime\": \"{{ruleTime10}}\",\n  \"endTime\": \"{{ruleTime12}}\",\n  \"internalNote\": \"client override\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 400\", function () { pm.expect(pm.response.code).to.eql(400); });",
+                  "pm.test(\"Nieznane pole jest odrzucone\", function () { pm.expect(pm.response.json().error.code).to.eql(\"VALIDATION_ERROR\"); pm.expect(pm.response.json().error.details.some(d => d.message.includes(\"internalNote\"))).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [
@@ -3486,6 +3773,37 @@
           "        pm.expect(body.error.requestId).to.eql(pm.response.headers.get(\"X-Request-Id\"));",
           "        pm.expect(Object.keys(body.error).every(key => [\"code\", \"message\", \"details\", \"requestId\"].includes(key))).to.eql(true);",
           "        pm.expect(pm.response.headers.get(\"Content-Type\").includes(\"application/json\")).to.eql(true);",
+          "    });",
+          "}",
+          "if (pm.response.code < 400 && pm.request.url.toString().includes(\"/api/reservations\")) {",
+          "    pm.test(\"Response DTO rezerwacji: jawne pola i daty UTC\", function () {",
+          "        const body = pm.response.json();",
+          "        const rows = Array.isArray(body) ? body : [body];",
+          "        for (const row of rows) {",
+          "            pm.expect(Object.keys(row).sort()).to.eql([\"id\", \"roomId\", \"reservedBy\", \"participants\", \"startTime\", \"endTime\", \"status\", \"createdAt\", \"cancelledAt\"].sort());",
+          "            for (const field of [\"startTime\", \"endTime\", \"createdAt\"]) {",
+          "                pm.expect(row[field]).to.eql(new Date(row[field]).toISOString());",
+          "            }",
+          "            if (row.status === \"CANCELLED\") {",
+          "                pm.expect(typeof row.cancelledAt).to.eql(\"string\");",
+          "                pm.expect(row.cancelledAt).to.eql(new Date(row.cancelledAt).toISOString());",
+          "            } else {",
+          "                pm.expect(row.cancelledAt).to.eql(null);",
+          "            }",
+          "        }",
+          "    });",
+          "}",
+          "if (pm.response.code === 201) {",
+          "    pm.test(\"Location wskazuje utworzoną rezerwację\", function () {",
+          "        pm.expect(pm.response.headers.get(\"Location\")).to.eql(\"/api/reservations/\" + pm.response.json().id);",
+          "    });",
+          "}",
+          "if (pm.response.code === 200 && pm.request.url.toString().includes(\"/api/rooms\")) {",
+          "    pm.test(\"Response DTO sali: jawne pola\", function () {",
+          "        const body = pm.response.json();",
+          "        for (const row of (Array.isArray(body) ? body : [body])) {",
+          "            pm.expect(Object.keys(row).sort()).to.eql([\"id\", \"name\", \"capacity\"].sort());",
+          "        }",
           "    });",
           "}"
         ]

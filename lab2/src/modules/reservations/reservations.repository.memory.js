@@ -1,6 +1,23 @@
-function createReservationsRepository() {
+function createReservationsRepository({ includeStartedReservation = false } = {}) {
     const reservations = [];
     let nextReservationId = 1;
+
+    // Dane demonstracyjne do testowania anulowania rozpoczetej rezerwacji.
+    if (includeStartedReservation) {
+        const createdAt = new Date();
+        reservations.push({
+            id: nextReservationId++,
+            roomId: 1,
+            reservedBy: "Started reservation (seed)",
+            participants: 5,
+            startTime: new Date(createdAt.getTime() - 2 * 60 * 60 * 1000),
+            endTime: new Date(createdAt.getTime() - 60 * 60 * 1000),
+            status: "CONFIRMED",
+            createdAt,
+            cancelledAt: null,
+            internalNote: "seed for cancellation demo"
+        });
+    }
 
     return {
         async list({ roomId } = {}) {
@@ -16,15 +33,17 @@ function createReservationsRepository() {
                 ...data,
                 id: nextReservationId++,
                 createdAt: new Date(),
-                cancelledAt: null
+                cancelledAt: null,
+                internalNote: "created via API v2"
             };
             reservations.push(reservation);
             return reservation;
         },
-        async updateStatus(id, status) {
+        async updateStatus(id, status, cancelledAt) {
             const reservation = reservations.find(reservation => reservation.id === id);
             if (!reservation) return null;
             reservation.status = status;
+            reservation.cancelledAt = cancelledAt;
             return reservation;
         }
     };

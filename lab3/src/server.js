@@ -8,6 +8,10 @@ const app = createApp({
     buildingsRepository: createBuildingsRepository(db),
     roomsRepository: createRoomsRepository(db),
     reservationsRepository: createReservationsRepository(db),
+    runInTransaction: work => db.transaction(trx => work({
+        roomsRepository: createRoomsRepository(trx),
+        reservationsRepository: createReservationsRepository(trx)
+    })),
     enableDebugRoutes: process.argv.includes("--debug")
 });
 

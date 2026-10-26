@@ -7,6 +7,7 @@ function createRoomsRepository() {
     ];
 
     return {
+        async lockById() {},
         async list() {
             return rooms;
         },

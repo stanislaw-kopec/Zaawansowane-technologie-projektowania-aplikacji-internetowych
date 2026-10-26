@@ -16,6 +16,7 @@ function createRoomsRepository(db) {
             return (await rows).map(toRoom);
         },
         findById,
+        async lockById(id) { await db("rooms").where({ id }).forUpdate().first(); },
         async create({ buildingId, name, capacity }) {
             const [row] = await db("rooms").insert({ building_id: buildingId, name, capacity }).returning("id");
             return findById(row.id);

@@ -15,6 +15,10 @@ function errorHandler(error, req, res, next) {
         response.code = error.code;
         response.message = error.message;
         if (error.details !== undefined) response.details = error.details;
+    } else if (error.code === "23P01") {
+        statusCode = 409;
+        response.code = "ROOM_ALREADY_BOOKED";
+        response.message = "Room already booked for this time interval";
     } else if (error.code === "23505") {
         statusCode = 409;
         response.code = "CONFLICT";

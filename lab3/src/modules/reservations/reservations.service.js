@@ -11,7 +11,9 @@ const ALLOWED_TRANSITIONS = {
     CANCELLED: []
 };
 
-function createReservationsService({ roomsRepository, reservationsRepository, now = () => new Date() }) {
+function createReservationsService({ roomsRepository, reservationsRepository, now = () => new Date(),
+    runInTransaction = work => work({ roomsRepository, reservationsRepository })
+}) {
     return {
         async getReservation(id) {
             const reservation = await reservationsRepository.findById(id);
@@ -22,37 +24,40 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
             return reservationsRepository.listPage(filters);
         },
         async createReservation(input) {
-            const room = await roomsRepository.findById(input.roomId);
-            if (!room) throw new NotFoundError("Room");
-            if (input.participants > room.capacity) {
-                throw new ConflictError("Room capacity exceeded", "ROOM_CAPACITY_EXCEEDED");
-            }
-            const start = new Date(input.startTime).getTime();
-            const end = new Date(input.endTime).getTime();
-            const duration = end - start;
-            const details = [];
+            return runInTransaction(async ({ roomsRepository, reservationsRepository }) => {
+                await roomsRepository.lockById(input.roomId);
+                const room = await roomsRepository.findById(input.roomId);
+                if (!room) throw new NotFoundError("Room");
+                if (input.participants > room.capacity) {
+                    throw new ConflictError("Room capacity exceeded", "ROOM_CAPACITY_EXCEEDED");
+                }
+                const start = new Date(input.startTime).getTime();
+                const end = new Date(input.endTime).getTime();
+                const duration = end - start;
+                const details = [];
 
-            if (start < now().getTime()) {
-                details.push({ location: "body", field: "startTime", message: "startTime must not be in the past" });
-            }
-            if (end <= start) {
-                details.push({ location: "body", field: "endTime", message: "endTime must be later than startTime" });
-            } else if (duration < MIN_DURATION_MS || duration > MAX_DURATION_MS) {
-                details.push({ location: "body", field: "endTime", message: "Reservation must last between 15 minutes and 8 hours" });
-            }
-            if (details.length > 0) throw new ValidationError(details);
+                if (start < now().getTime()) {
+                    details.push({ location: "body", field: "startTime", message: "startTime must not be in the past" });
+                }
+                if (end <= start) {
+                    details.push({ location: "body", field: "endTime", message: "endTime must be later than startTime" });
+                } else if (duration < MIN_DURATION_MS || duration > MAX_DURATION_MS) {
+                    details.push({ location: "body", field: "endTime", message: "Reservation must last between 15 minutes and 8 hours" });
+                }
+                if (details.length > 0) throw new ValidationError(details);
 
-            const reservations = await reservationsRepository.list({ roomId: input.roomId });
-            const overlaps = reservations.some(reservation =>
-                reservation.status === "CONFIRMED" &&
-                start < new Date(reservation.endTime).getTime() &&
-                new Date(reservation.startTime).getTime() < end
-            );
-            if (overlaps) {
-                throw new ConflictError("Room already booked for this time interval", "ROOM_ALREADY_BOOKED");
-            }
+                const reservations = await reservationsRepository.list({ roomId: input.roomId });
+                const overlaps = reservations.some(reservation =>
+                    reservation.status === "CONFIRMED" &&
+                    start < new Date(reservation.endTime).getTime() &&
+                    new Date(reservation.startTime).getTime() < end
+                );
+                if (overlaps) {
+                    throw new ConflictError("Room already booked for this time interval", "ROOM_ALREADY_BOOKED");
+                }
 
-            return reservationsRepository.create({ ...input, status: "CONFIRMED" });
+                return reservationsRepository.create({ ...input, status: "CONFIRMED" });
+            });
         },
         async cancelReservation(id) {
             const reservation = await reservationsRepository.findById(id);

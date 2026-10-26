@@ -13,13 +13,13 @@ const { createBuildingsService } = require("./modules/buildings/buildings.servic
 const { createBuildingsController } = require("./modules/buildings/buildings.controller");
 const { createBuildingsRouter } = require("./modules/buildings/buildings.routes");
 
-function createApp({ buildingsRepository, roomsRepository, reservationsRepository, now, enableDebugRoutes = false }) {
+function createApp({ buildingsRepository, roomsRepository, reservationsRepository, now, runInTransaction, enableDebugRoutes = false }) {
     const app = express();
     app.use(requestLogger);
     app.use(express.json());
 
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
-    const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now });
+    const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction });
     app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository, roomsRepository }))));
     app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
     app.use("/api/reservations", createReservationsRouter(createReservationsController(reservationsService)));

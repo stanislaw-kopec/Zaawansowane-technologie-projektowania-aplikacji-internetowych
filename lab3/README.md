@@ -1,4 +1,4 @@
-# Laboratorium 3 — zadania 1-4
+# Laboratorium 3 — zadania 1-5
 
 ## Uruchomienie bazy i migracji
 
@@ -92,3 +92,36 @@ Przykłady:
 ```
 
 Daty filtrują nakładanie się przedziałów: `end_time > from` i `start_time < to`. Niepoprawne parametry, w tym `from >= to`, zwracają `400`. Strona poza zakresem zwraca `200` z pustym `data`, zachowując licznik pasujących rekordów.
+
+## Zadanie 5
+
+Tworzenie rezerwacji wykonuje się w jednej transakcji. `SELECT ... FOR UPDATE` blokuje wiersz sali przed sprawdzeniem kolizji i zapisem. Blokujemy salę, ponieważ istnieje także wtedy, gdy nie ma jeszcze żadnej rezerwacji. Równoległy request dla tej samej sali czeka na zakończenie poprzedniej transakcji.
+
+Sama transakcja przy domyślnym `READ COMMITTED` nie wystarcza: dwa requesty mogą jednocześnie odczytać brak kolizji i oba zapisać rezerwację. Blokada sali wymusza kolejność sprawdzeń.
+
+Nowa migracja dodaje `btree_gist` i exclusion constraint dla `CONFIRMED`. Przedział `[)` dopuszcza stykające się rezerwacje. Błąd PostgreSQL `23P01` zwraca `409 ROOM_ALREADY_BOOKED`.
+
+Po pobraniu zmian uruchom `npm run db:migrate`, a potem `npm start`.
+W drugim terminalu, w katalogu `lab3`:
+
+```powershell
+node scripts/double-booking.js 1
+```
+
+Skrypt wysyła 10 requestów na salę 1, na godzinę zaczynającą się jutro. Wypisuje status każdego requestu i liczbę identycznych rezerwacji `CONFIRMED` odczytaną SQL-em. Zostawia utworzoną rezerwację w bazie. Opcjonalnie można podać konkretny przyszły termin jako drugi argument, np. `node scripts/double-booking.js 1 2030-12-01T10:00:00Z`.
+
+Test trzech wariantów, bez zmiany danych użytkownika:
+
+```powershell
+$env:RUN_DB_TESTS = "1"
+node --test tests/concurrency.integration.test.js
+Remove-Item Env:RUN_DB_TESTS
+```
+
+Wyniki zapisano w `scripts/double-booking-results.txt`:
+
+- Przed naprawą: 10 × `201`, 10 rezerwacji.
+- Transakcja, blokada i constraint: 1 × `201`, 9 × `409`, 1 rezerwacja.
+- Sam constraint: 1 × `201`, 9 × `409`, 1 rezerwacja.
+
+Opóźnienie 250 ms oraz wyłączanie zabezpieczeń występują wyłącznie w izolowanym teście demonstracyjnym. Kod API nie zawiera sztucznego opóźnienia ani przełącznika wyłączającego zabezpieczenia.

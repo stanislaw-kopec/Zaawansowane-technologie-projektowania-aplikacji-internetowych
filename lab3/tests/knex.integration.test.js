@@ -11,7 +11,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
     const admin = knex(config);
     const schema = `lab3_test_${process.pid}`;
     const url = new URL(config.connection);
-    url.searchParams.set("options", `-c search_path=${schema}`);
+    url.searchParams.set("options", `-c search_path=${schema},public`);
     const db = knex({ client: "pg", connection: url.toString() });
     let server;
     let base;
@@ -47,6 +47,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
     try {
         await admin.raw("CREATE SCHEMA ??", [schema]);
         await require("../src/db/migrations/202610260001_create_booking_tables").up(db);
+        await require("../src/db/migrations/202610260002_prevent_double_booking").up(db);
         const seed = require("../src/db/seeds/01_booking").seed;
         const snapshot = async () => Promise.all(["buildings", "rooms", "reservations"].map(t => db(t).orderBy("id")));
         await seed(db);
@@ -62,7 +63,11 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         const app = createApp({
             buildingsRepository: require("../src/modules/buildings/buildings.repository.knex").createBuildingsRepository(db),
             roomsRepository: require("../src/modules/rooms/rooms.repository.knex").createRoomsRepository(db),
-            reservationsRepository: require("../src/modules/reservations/reservations.repository.knex").createReservationsRepository(db)
+            reservationsRepository: require("../src/modules/reservations/reservations.repository.knex").createReservationsRepository(db),
+            runInTransaction: work => db.transaction(trx => work({
+                roomsRepository: require("../src/modules/rooms/rooms.repository.knex").createRoomsRepository(trx),
+                reservationsRepository: require("../src/modules/reservations/reservations.repository.knex").createReservationsRepository(trx)
+            }))
         });
         const http = app.listen(0);
         await new Promise(resolve => http.once("listening", resolve));

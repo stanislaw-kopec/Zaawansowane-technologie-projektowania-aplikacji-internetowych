@@ -1,4 +1,4 @@
-# Laboratorium 3 — zadania 1-2
+# Laboratorium 3 — zadania 1-3
 
 ## Uruchomienie bazy i migracji
 
@@ -57,3 +57,21 @@ $env:RUN_DB_TESTS = "1"
 npm test
 Remove-Item Env:RUN_DB_TESTS
 ```
+
+## Zadanie 3
+
+- `GET /api/rooms/:id` zwraca również `building`.
+- `GET /api/buildings/:id/rooms` zwraca sale budynku; pusty budynek: `[]`, brak budynku: `404`.
+- `GET /api/reservations/:id` oraz lista rezerwacji zawierają `room` z zagnieżdżonym `building`.
+- `GET /api/buildings` zawiera liczbowe `roomsCount`, również `0` dla pustego budynku.
+
+Lista sal budynku wykonuje 2 zapytania (istnienie budynku i sale). Pozostałe wymienione odczyty wykonują po 1 zapytaniu. Test bazy sprawdza także listę przy 5 i 20 rezerwacjach w oddzielnym schemacie.
+
+Logi SQL podczas pracy API:
+
+```powershell
+$env:DEBUG = "knex:query"
+npm start
+```
+
+Po zakończeniu: `Remove-Item Env:DEBUG`.

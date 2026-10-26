@@ -20,7 +20,7 @@ function createApp({ buildingsRepository, roomsRepository, reservationsRepositor
 
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
     const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now });
-    app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository }))));
+    app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository, roomsRepository }))));
     app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
     app.use("/api/reservations", createReservationsRouter(createReservationsController(reservationsService)));
     // Tymczasowy endpoint do demonstracji 500; wlaczany jawnie podczas uruchamiania.

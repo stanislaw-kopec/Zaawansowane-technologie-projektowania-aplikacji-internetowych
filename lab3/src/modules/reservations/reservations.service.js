@@ -13,6 +13,11 @@ const ALLOWED_TRANSITIONS = {
 
 function createReservationsService({ roomsRepository, reservationsRepository, now = () => new Date() }) {
     return {
+        async getReservation(id) {
+            const reservation = await reservationsRepository.findById(id);
+            if (!reservation) throw new NotFoundError("Reservation");
+            return reservation;
+        },
         async listReservations(filters) {
             return reservationsRepository.list(filters);
         },

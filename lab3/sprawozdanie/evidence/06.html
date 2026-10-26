@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Dane po restarcie procesu API</h1><p>Zapis rzeczywistych wyników poleceń · 06</p><pre>Proces API przed restartem: 10400
+Proces API po restarcie: 25752
+
+curl.exe -i "http://localhost:51230/api/rooms/6"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": 6,
+  "name": "101",
+  "capacity": 10,
+  "building": {
+    "id": 3,
+    "name": "Budynek SCREEN"
+  }
+}</pre>

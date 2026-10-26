@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Obsluzone bledy: 404 i 409</h1><p>Zapis rzeczywistych wyników poleceń · 07</p><pre>curl.exe -i "http://localhost:51230/api/rooms" -H "Content-Type: application/json" --data-binary "@request.json"
+request.json: {"buildingId":999999,"name":"101","capacity":10}
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Building not found",
+    "requestId": "328b5a29-219b-4d0d-b4c6-cd3a87e014ef"
+  }
+}
+
+curl.exe -i "http://localhost:51230/api/rooms" -H "Content-Type: application/json" --data-binary "@request.json"
+request.json: {"buildingId":3,"name":"101","capacity":10}
+
+HTTP/1.1 409 Conflict
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "CONFLICT",
+    "message": "Resource already exists",
+    "requestId": "34b25cb4-cb97-40c2-9836-e2c37d09af4c"
+  }
+}</pre>

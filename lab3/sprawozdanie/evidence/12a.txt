@@ -1,0 +1,54 @@
+curl.exe -i "http://localhost:51230/api/reservations?buildingId=1&status=CONFIRMED&page=2&limit=2&sort=startTime"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "data": [
+    {
+      "id": 6,
+      "room": {
+        "id": 1,
+        "name": "101",
+        "building": {
+          "id": 1,
+          "name": "Budynek A"
+        }
+      },
+      "reservedBy": "N+1 test",
+      "participants": 1,
+      "startTime": "2035-01-01T10:00:00.000Z",
+      "endTime": "2035-01-01T11:00:00.000Z",
+      "status": "CONFIRMED",
+      "createdAt": "2026-10-26T20:36:09.848Z",
+      "cancelledAt": null
+    },
+    {
+      "id": 7,
+      "room": {
+        "id": 1,
+        "name": "101",
+        "building": {
+          "id": 1,
+          "name": "Budynek A"
+        }
+      },
+      "reservedBy": "N+1 test",
+      "participants": 1,
+      "startTime": "2035-01-02T10:00:00.000Z",
+      "endTime": "2035-01-02T11:00:00.000Z",
+      "status": "CONFIRMED",
+      "createdAt": "2026-10-26T20:36:09.848Z",
+      "cancelledAt": null
+    }
+  ],
+  "meta": {
+    "page": 2,
+    "limit": 2,
+    "total": 17,
+    "totalPages": 9
+  }
+}
+
+DEBUG=knex:query
+2026-10-26T20:36:10.309Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "building_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "r"."building_id" = $1 and "res"."status" = $2 order by "res"."start_time" asc, "res"."id" asc limit $3 offset $4 undefined
+2026-10-26T20:36:10.309Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "r"."building_id" = $1 and "res"."status" = $2 limit $3 undefined

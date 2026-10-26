@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Proby naruszenia ograniczen - psql</h1><p>Zapis rzeczywistych wyników poleceń · 03 · część 1</p><pre>\pset pager off
+Pager usage is off.
+BEGIN;
+BEGIN
+INSERT INTO buildings(name,address) VALUES ('Constraint demo','Test') RETURNING id AS b \gset
+INSERT 0 1
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'101',10) RETURNING id AS r \gset
+INSERT 0 1
+\echo UNIQUE buildings.name
+UNIQUE buildings.name
+SAVEPOINT example;
+SAVEPOINT
+INSERT INTO buildings(name,address) VALUES ('Constraint demo','Test');
+ROLLBACK TO example;
+ROLLBACK
+\echo UNIQUE rooms(building_id,name)
+UNIQUE rooms(building_id,name)
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'101',10);
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK capacity &gt; 0
+CHECK capacity &gt; 0
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'102',0);
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK end_time &gt; start_time
+CHECK end_time &gt; start_time
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time) VALUES (:r,'Test',1,'2035-01-01 11:00Z','2035-01-
+  01 10:00Z');
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK status
+CHECK status
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time,status) VALUES (:r,'Test',1,'2035-01-01 10:00Z','2
+  035-01-01 11:00Z','INVALID');
+ROLLBACK TO example;
+ROLLBACK
+\echo FK rooms.building_id
+FK rooms.building_id
+INSERT INTO rooms(building_id,name,capacity) VALUES (-1,'101',10);
+ROLLBACK TO example;
+ROLLBACK
+\echo FK reservations.room_id
+FK reservations.room_id
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time) VALUES (-1,'Test',1,'2035-01-01 10:00Z','2035-01-
+  01 11:00Z');</pre>

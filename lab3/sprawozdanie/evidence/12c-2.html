@@ -1,0 +1,15 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Filtry i paginacja - przyklad 3</h1><p>Zapis rzeczywistych wyników poleceń · 12c · część 2</p><pre>    "limit": 2,
+    "total": 4,
+    "totalPages": 2
+  }
+}
+
+DEBUG=knex:query
+2026-10-26T20:36:10.577Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "buildin
+  g_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on 
+  "b"."id" = "r"."building_id" where "res"."end_time" &gt; $1 and "res"."start_time" &lt; $2 order by "res"."participants" desc, "res"
+  ."id" asc limit $3 undefined
+2026-10-26T20:36:10.578Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" o
+  n "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "res"."end_time" &gt; $1 and "re
+  s"."start_time" &lt; $2 limit $3 undefined
+</pre>

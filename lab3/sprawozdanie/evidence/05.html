@@ -1,0 +1,27 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Tworzenie budynku i sali</h1><p>Zapis rzeczywistych wyników poleceń · 05</p><pre>curl.exe -i "http://localhost:51225/api/buildings" -H "Content-Type: application/json" --data-binary "@request.json"
+request.json: {"name":"Budynek SCREEN","address":"ul. Testowa 1"}
+
+HTTP/1.1 201 Created
+Location: /api/buildings/3
+Content-Type: application/json; charset=utf-8
+{
+  "id": 3,
+  "name": "Budynek SCREEN",
+  "address": "ul. Testowa 1"
+}
+
+curl.exe -i "http://localhost:51225/api/rooms" -H "Content-Type: application/json" --data-binary "@request.json"
+request.json: {"buildingId":3,"name":"101","capacity":10}
+
+HTTP/1.1 201 Created
+Location: /api/rooms/6
+Content-Type: application/json; charset=utf-8
+{
+  "id": 6,
+  "name": "101",
+  "capacity": 10,
+  "building": {
+    "id": 3,
+    "name": "Budynek SCREEN"
+  }
+}</pre>

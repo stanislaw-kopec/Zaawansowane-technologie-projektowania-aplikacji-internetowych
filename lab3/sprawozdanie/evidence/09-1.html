@@ -1,0 +1,46 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Licznik sal i budynek bez sal</h1><p>Zapis rzeczywistych wyników poleceń · 09 · część 1</p><pre>curl.exe -i "http://localhost:51230/api/buildings"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 1,
+    "name": "Budynek A",
+    "address": "ul. Warszawska 24, Krakow",
+    "roomsCount": 3
+  },
+  {
+    "id": 2,
+    "name": "Budynek B",
+    "address": "ul. Warszawska 26, Krakow",
+    "roomsCount": 2
+  },
+  {
+    "id": 3,
+    "name": "Budynek SCREEN",
+    "address": "ul. Testowa 1",
+    "roomsCount": 1
+  },
+  {
+    "id": 4,
+    "name": "Pusty budynek",
+    "address": "Test",
+    "roomsCount": 0
+  }
+]
+
+curl.exe -i "http://localhost:51230/api/buildings/4/rooms"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[]
+
+curl.exe -i "http://localhost:51230/api/buildings/999999/rooms"
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Building not found",
+    "requestId": "54b9a171-5d6c-45e5-9508-1fc30cc4399f"</pre>

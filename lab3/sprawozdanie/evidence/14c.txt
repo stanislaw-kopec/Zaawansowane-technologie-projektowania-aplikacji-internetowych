@@ -1,0 +1,32 @@
+DATABASE CONSTRAINT ONLY
+[ad937e6a-787a-4823-a6a3-387dbfcc0c5a] POST /api/reservations -> 409 (265.4 ms)
+[1cd562f1-5dfd-47c8-9648-7e6c34aba4c2] POST /api/reservations -> 409 (261.7 ms)
+[4814810f-a178-4f22-af3c-903228ef7784] POST /api/reservations -> 409 (265.7 ms)
+[2b6d11e4-eb6a-4619-858f-c4fc6a9a2ba3] POST /api/reservations -> 409 (263.8 ms)
+[889e0b86-2a5f-4e72-96a5-495770f6f197] POST /api/reservations -> 409 (261.4 ms)
+[6e1b3eea-add4-4d78-a8e9-47a2aa23af03] POST /api/reservations -> 409 (265.8 ms)
+[525ae531-1647-4811-a7bb-c569be6532f5] POST /api/reservations -> 409 (269.8 ms)
+[bf0f512b-e385-46a4-b0d8-9f463a92b3cb] POST /api/reservations -> 409 (282.8 ms)
+[85e12c29-77fb-4606-aa3e-597463057521] POST /api/reservations -> 409 (281.8 ms)
+Request 4: 409
+Request 9: 409
+Request 6: 409
+Request 8: 409
+[8927eac5-8a7c-48f3-a678-931253826923] POST /api/reservations -> 201 (275.1 ms)
+Request 10: 409
+Request 7: 409
+Request 5: 409
+Request 1: 409
+Request 2: 409
+Request 3: 201
+CONFIRMED in database: 1
+Adjacent intervals and replacement after cancellation: OK
+âś” double booking demonstration (1455.7566ms)
+â„ą tests 1
+â„ą suites 0
+â„ą pass 1
+â„ą fail 0
+â„ą cancelled 0
+â„ą skipped 0
+â„ą todo 0
+â„ą duration_ms 2100.9726

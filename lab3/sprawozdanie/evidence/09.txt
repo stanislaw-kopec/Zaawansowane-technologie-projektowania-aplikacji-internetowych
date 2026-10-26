@@ -1,0 +1,48 @@
+curl.exe -i "http://localhost:51230/api/buildings"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 1,
+    "name": "Budynek A",
+    "address": "ul. Warszawska 24, Krakow",
+    "roomsCount": 3
+  },
+  {
+    "id": 2,
+    "name": "Budynek B",
+    "address": "ul. Warszawska 26, Krakow",
+    "roomsCount": 2
+  },
+  {
+    "id": 3,
+    "name": "Budynek SCREEN",
+    "address": "ul. Testowa 1",
+    "roomsCount": 1
+  },
+  {
+    "id": 4,
+    "name": "Pusty budynek",
+    "address": "Test",
+    "roomsCount": 0
+  }
+]
+
+curl.exe -i "http://localhost:51230/api/buildings/4/rooms"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[]
+
+curl.exe -i "http://localhost:51230/api/buildings/999999/rooms"
+
+HTTP/1.1 404 Not Found
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Building not found",
+    "requestId": "54b9a171-5d6c-45e5-9508-1fc30cc4399f"
+  }
+}

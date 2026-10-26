@@ -1,0 +1,17 @@
+curl.exe -i "http://localhost:51230/api/reservations?buildingId=2&sort=-startTime&page=99&limit=1"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "data": [],
+  "meta": {
+    "page": 99,
+    "limit": 1,
+    "total": 2,
+    "totalPages": 2
+  }
+}
+
+DEBUG=knex:query
+2026-10-26T20:36:10.711Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "building_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "r"."building_id" = $1 order by "res"."start_time" desc, "res"."id" asc limit $2 offset $3 undefined
+2026-10-26T20:36:10.711Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "r"."building_id" = $1 limit $2 undefined

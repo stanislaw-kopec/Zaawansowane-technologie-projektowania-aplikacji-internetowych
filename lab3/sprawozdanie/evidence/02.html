@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Schemat reservations - psql</h1><p>Zapis rzeczywistych wyników poleceń · 02</p><pre>                              Table "lab3_report_1793046962564.reservations"
+    Column    |           Type           | Collation | Nullable |                 Default                  
+--------------+--------------------------+-----------+----------+------------------------------------------
+ id           | integer                  |           | not null | nextval('reservations_id_seq'::regclass)
+ room_id      | integer                  |           | not null | 
+ reserved_by  | character varying(100)   |           | not null | 
+ participants | integer                  |           | not null | 
+ start_time   | timestamp with time zone |           | not null | 
+ end_time     | timestamp with time zone |           | not null | 
+ status       | character varying(20)    |           | not null | 'CONFIRMED'::character varying
+ cancelled_at | timestamp with time zone |           |          | 
+ created_at   | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+Indexes:
+    "reservations_pkey" PRIMARY KEY, btree (id)
+    "reservations_no_overlap" EXCLUDE USING gist (room_id WITH =, tstzrange(start_time, end_time, '[)'::text) WITH &amp;&amp;) WHERE (st
+  atus::text = 'CONFIRMED'::text)
+    "reservations_overlap_index" btree (room_id, start_time, end_time)
+Check constraints:
+    "reservations_status_check" CHECK (status::text = ANY (ARRAY['CONFIRMED'::character varying, 'CANCELLED'::character varying]
+  ::text[]))
+    "reservations_time_check" CHECK (end_time &gt; start_time)
+Foreign-key constraints:
+    "reservations_room_id_foreign" FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE RESTRICT
+
+</pre>

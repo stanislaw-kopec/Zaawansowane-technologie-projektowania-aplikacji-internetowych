@@ -1,0 +1,41 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Proby naruszenia ograniczen — psql</h1><p>Zapis rzeczywistych wyników poleceń · 03</p><pre>Pager usage is off.
+BEGIN
+INSERT 0 1
+INSERT 0 1
+UNIQUE buildings.name
+SAVEPOINT
+ERROR:  duplicate key value violates unique constraint "buildings_name_unique"
+DETAIL:  Key (name)=(Constraint demo) already exists.
+ROLLBACK
+UNIQUE rooms(building_id,name)
+ERROR:  duplicate key value violates unique constraint "rooms_building_id_name_unique"
+DETAIL:  Key (building_id, name)=(1, 101) already exists.
+ROLLBACK
+CHECK capacity &gt; 0
+ERROR:  new row for relation "rooms" violates check constraint "rooms_capacity_check"
+DETAIL:  Failing row contains (3, 1, 102, 0, 2026-10-26 20:36:06.146608+00).
+ROLLBACK
+CHECK end_time &gt; start_time
+ERROR:  new row for relation "reservations" violates check constraint "reservations_time_check"
+DETAIL:  Failing row contains (1, 1, Test, 1, 2035-01-01 11:00:00+00, 2035-01-01 10:00:00+00, CONFIRMED, null, 2026-10-26 20:36:
+  06.146608+00).
+ROLLBACK
+CHECK status
+ERROR:  new row for relation "reservations" violates check constraint "reservations_status_check"
+DETAIL:  Failing row contains (2, 1, Test, 1, 2035-01-01 10:00:00+00, 2035-01-01 11:00:00+00, INVALID, null, 2026-10-26 20:36:06
+  .146608+00).
+ROLLBACK
+FK rooms.building_id
+ERROR:  insert or update on table "rooms" violates foreign key constraint "rooms_building_id_foreign"
+DETAIL:  Key (building_id)=(-1) is not present in table "buildings".
+ROLLBACK
+FK reservations.room_id
+ERROR:  insert or update on table "reservations" violates foreign key constraint "reservations_room_id_foreign"
+DETAIL:  Key (room_id)=(-1) is not present in table "rooms".
+ROLLBACK
+ON DELETE RESTRICT
+ERROR:  update or delete on table "buildings" violates foreign key constraint "rooms_building_id_foreign" on table "rooms"
+DETAIL:  Key (id)=(1) is still referenced from table "rooms".
+ROLLBACK
+ROLLBACK
+</pre>

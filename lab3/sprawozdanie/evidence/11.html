@@ -1,0 +1,16 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · DEBUG=knex:query - 5 i 20 rezerwacji</h1><p>Zapis rzeczywistych wyników poleceń · 11</p><pre>GET /api/reservations â€” 5 rekordow
+{"page":1,"limit":20,"total":5,"totalPages":1}
+2026-10-26T20:36:10.062Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "buildin
+  g_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on 
+  "b"."id" = "r"."building_id" order by "res"."start_time" asc, "res"."id" asc limit $1 undefined
+2026-10-26T20:36:10.065Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" o
+  n "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" limit $1 undefined
+
+GET /api/reservations â€” 20 rekordow
+{"page":1,"limit":20,"total":20,"totalPages":1}
+2026-10-26T20:36:10.183Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "buildin
+  g_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on 
+  "b"."id" = "r"."building_id" order by "res"."start_time" asc, "res"."id" asc limit $1 undefined
+2026-10-26T20:36:10.183Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" o
+  n "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" limit $1 undefined
+</pre>

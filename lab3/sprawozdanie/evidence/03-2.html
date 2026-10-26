@@ -1,0 +1,29 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Proby naruszenia ograniczen - psql</h1><p>Zapis rzeczywistych wyników poleceń · 03 · część 2</p><pre>ROLLBACK TO example;
+ROLLBACK
+\echo ON DELETE RESTRICT
+ON DELETE RESTRICT
+DELETE FROM buildings WHERE id=:b;
+ROLLBACK TO example;
+ROLLBACK
+ROLLBACK;
+ROLLBACK
+
+ERROR:  duplicate key value violates unique constraint "buildings_name_unique"
+DETAIL:  Key (name)=(Constraint demo) already exists.
+ERROR:  duplicate key value violates unique constraint "rooms_building_id_name_unique"
+DETAIL:  Key (building_id, name)=(5, 101) already exists.
+ERROR:  new row for relation "rooms" violates check constraint "rooms_capacity_check"
+DETAIL:  Failing row contains (10, 5, 102, 0, 2026-10-26 20:38:44.021324+00).
+ERROR:  new row for relation "reservations" violates check constraint "reservations_time_check"
+DETAIL:  Failing row contains (21, 8, Test, 1, 2035-01-01 11:00:00+00, 2035-01-01 10:00:00+00, CONFIRMED, null, 2026-10-26 20:38
+  :44.021324+00).
+ERROR:  new row for relation "reservations" violates check constraint "reservations_status_check"
+DETAIL:  Failing row contains (22, 8, Test, 1, 2035-01-01 10:00:00+00, 2035-01-01 11:00:00+00, INVALID, null, 2026-10-26 20:38:4
+  4.021324+00).
+ERROR:  insert or update on table "rooms" violates foreign key constraint "rooms_building_id_foreign"
+DETAIL:  Key (building_id)=(-1) is not present in table "buildings".
+ERROR:  insert or update on table "reservations" violates foreign key constraint "reservations_room_id_foreign"
+DETAIL:  Key (room_id)=(-1) is not present in table "rooms".
+ERROR:  update or delete on table "buildings" violates foreign key constraint "rooms_building_id_foreign" on table "rooms"
+DETAIL:  Key (id)=(5) is still referenced from table "rooms".
+</pre>

@@ -1,0 +1,7 @@
+NAME                     IMAGE         COMMAND                  SERVICE   CREATED       STATUS       PORTS
+room-booking-lab3-db-1   postgres:16   "docker-entrypoint.sâ€¦"   db        8 hours ago   Up 8 hours   127.0.0.1:5433->5432/tcp
+
+Knex migrate.latest(): [1,["202610260001_create_booking_tables.js","202610260002_prevent_double_booking.js"]]
+Knex migrate.rollback(all): [1,["202610260002_prevent_double_booking.js","202610260001_create_booking_tables.js"]]
+Knex migrate.latest(): [1,["202610260001_create_booking_tables.js","202610260002_prevent_double_booking.js"]]
+Schemat testowy: lab3_report_1793046962564

@@ -1,0 +1,38 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Walidacja parametrow - 400</h1><p>Zapis rzeczywistych wyników poleceń · 13</p><pre>curl.exe -i "http://localhost:51230/api/reservations?sort=invalid"
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "requestId": "c4978cc3-1ea8-4f8b-a621-85f599210466",
+    "details": [
+      {
+        "location": "query",
+        "field": "sort",
+        "message": "Invalid option: expected one of \"startTime\"|\"-startTime\"|\"createdAt\"|\"-createdAt\"|\"participants\"|\
+  "-participants\""
+      }
+    ]
+  }
+}
+
+curl.exe -i "http://localhost:51230/api/reservations?from=2026-11-10T11:00:00Z&amp;to=2026-11-10T10:00:00Z"
+
+HTTP/1.1 400 Bad Request
+Content-Type: application/json; charset=utf-8
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed",
+    "requestId": "4c59c898-a364-42a7-b9af-c7c16f9c85a7",
+    "details": [
+      {
+        "location": "query",
+        "field": "to",
+        "message": "to must be later than from"
+      }
+    ]
+  }
+}</pre>

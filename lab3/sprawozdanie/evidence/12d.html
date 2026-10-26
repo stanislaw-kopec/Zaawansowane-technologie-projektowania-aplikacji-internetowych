@@ -1,0 +1,23 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Filtry i paginacja - przyklad 4</h1><p>Zapis rzeczywistych wyników poleceń · 12d</p><pre>curl.exe -i "http://localhost:51230/api/reservations?buildingId=2&amp;sort=-startTime&amp;page=99&amp;limit=1"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "data": [],
+  "meta": {
+    "page": 99,
+    "limit": 1,
+    "total": 2,
+    "totalPages": 2
+  }
+}
+
+DEBUG=knex:query
+2026-10-26T20:36:10.711Z knex:query select "res".*, "r"."name" as "room_name", "b"."id" as "building_id", "b"."name" as "buildin
+  g_name" from "reservations" as "res" inner join "rooms" as "r" on "r"."id" = "res"."room_id" inner join "buildings" as "b" on 
+  "b"."id" = "r"."building_id" where "r"."building_id" = $1 order by "res"."start_time" desc, "res"."id" asc limit $2 offset $3 
+  undefined
+2026-10-26T20:36:10.711Z knex:query select count("res"."id") as "total" from "reservations" as "res" inner join "rooms" as "r" o
+  n "r"."id" = "res"."room_id" inner join "buildings" as "b" on "b"."id" = "r"."building_id" where "r"."building_id" = $1 limit 
+  $2 undefined
+</pre>

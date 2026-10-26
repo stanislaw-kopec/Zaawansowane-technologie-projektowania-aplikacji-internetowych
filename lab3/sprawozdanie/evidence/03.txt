@@ -1,0 +1,69 @@
+\pset pager off
+Pager usage is off.
+BEGIN;
+BEGIN
+INSERT INTO buildings(name,address) VALUES ('Constraint demo','Test') RETURNING id AS b \gset
+INSERT 0 1
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'101',10) RETURNING id AS r \gset
+INSERT 0 1
+\echo UNIQUE buildings.name
+UNIQUE buildings.name
+SAVEPOINT example;
+SAVEPOINT
+INSERT INTO buildings(name,address) VALUES ('Constraint demo','Test');
+ROLLBACK TO example;
+ROLLBACK
+\echo UNIQUE rooms(building_id,name)
+UNIQUE rooms(building_id,name)
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'101',10);
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK capacity > 0
+CHECK capacity > 0
+INSERT INTO rooms(building_id,name,capacity) VALUES (:b,'102',0);
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK end_time > start_time
+CHECK end_time > start_time
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time) VALUES (:r,'Test',1,'2035-01-01 11:00Z','2035-01-01 10:00Z');
+ROLLBACK TO example;
+ROLLBACK
+\echo CHECK status
+CHECK status
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time,status) VALUES (:r,'Test',1,'2035-01-01 10:00Z','2035-01-01 11:00Z','INVALID');
+ROLLBACK TO example;
+ROLLBACK
+\echo FK rooms.building_id
+FK rooms.building_id
+INSERT INTO rooms(building_id,name,capacity) VALUES (-1,'101',10);
+ROLLBACK TO example;
+ROLLBACK
+\echo FK reservations.room_id
+FK reservations.room_id
+INSERT INTO reservations(room_id,reserved_by,participants,start_time,end_time) VALUES (-1,'Test',1,'2035-01-01 10:00Z','2035-01-01 11:00Z');
+ROLLBACK TO example;
+ROLLBACK
+\echo ON DELETE RESTRICT
+ON DELETE RESTRICT
+DELETE FROM buildings WHERE id=:b;
+ROLLBACK TO example;
+ROLLBACK
+ROLLBACK;
+ROLLBACK
+
+ERROR:  duplicate key value violates unique constraint "buildings_name_unique"
+DETAIL:  Key (name)=(Constraint demo) already exists.
+ERROR:  duplicate key value violates unique constraint "rooms_building_id_name_unique"
+DETAIL:  Key (building_id, name)=(5, 101) already exists.
+ERROR:  new row for relation "rooms" violates check constraint "rooms_capacity_check"
+DETAIL:  Failing row contains (10, 5, 102, 0, 2026-10-26 20:38:44.021324+00).
+ERROR:  new row for relation "reservations" violates check constraint "reservations_time_check"
+DETAIL:  Failing row contains (21, 8, Test, 1, 2035-01-01 11:00:00+00, 2035-01-01 10:00:00+00, CONFIRMED, null, 2026-10-26 20:38:44.021324+00).
+ERROR:  new row for relation "reservations" violates check constraint "reservations_status_check"
+DETAIL:  Failing row contains (22, 8, Test, 1, 2035-01-01 10:00:00+00, 2035-01-01 11:00:00+00, INVALID, null, 2026-10-26 20:38:44.021324+00).
+ERROR:  insert or update on table "rooms" violates foreign key constraint "rooms_building_id_foreign"
+DETAIL:  Key (building_id)=(-1) is not present in table "buildings".
+ERROR:  insert or update on table "reservations" violates foreign key constraint "reservations_room_id_foreign"
+DETAIL:  Key (room_id)=(-1) is not present in table "rooms".
+ERROR:  update or delete on table "buildings" violates foreign key constraint "rooms_building_id_foreign" on table "rooms"
+DETAIL:  Key (id)=(5) is still referenced from table "rooms".

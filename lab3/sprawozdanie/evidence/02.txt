@@ -1,0 +1,22 @@
+                              Table "lab3_report_1793046962564.reservations"
+    Column    |           Type           | Collation | Nullable |                 Default                  
+--------------+--------------------------+-----------+----------+------------------------------------------
+ id           | integer                  |           | not null | nextval('reservations_id_seq'::regclass)
+ room_id      | integer                  |           | not null | 
+ reserved_by  | character varying(100)   |           | not null | 
+ participants | integer                  |           | not null | 
+ start_time   | timestamp with time zone |           | not null | 
+ end_time     | timestamp with time zone |           | not null | 
+ status       | character varying(20)    |           | not null | 'CONFIRMED'::character varying
+ cancelled_at | timestamp with time zone |           |          | 
+ created_at   | timestamp with time zone |           | not null | CURRENT_TIMESTAMP
+Indexes:
+    "reservations_pkey" PRIMARY KEY, btree (id)
+    "reservations_no_overlap" EXCLUDE USING gist (room_id WITH =, tstzrange(start_time, end_time, '[)'::text) WITH &&) WHERE (status::text = 'CONFIRMED'::text)
+    "reservations_overlap_index" btree (room_id, start_time, end_time)
+Check constraints:
+    "reservations_status_check" CHECK (status::text = ANY (ARRAY['CONFIRMED'::character varying, 'CANCELLED'::character varying]::text[]))
+    "reservations_time_check" CHECK (end_time > start_time)
+Foreign-key constraints:
+    "reservations_room_id_foreign" FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE RESTRICT
+

@@ -1,0 +1,33 @@
+curl.exe -i "http://localhost:51230/api/buildings/1/rooms"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 1,
+    "name": "101",
+    "capacity": 30,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  },
+  {
+    "id": 2,
+    "name": "102",
+    "capacity": 20,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  },
+  {
+    "id": 3,
+    "name": "103",
+    "capacity": 10,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  }
+]

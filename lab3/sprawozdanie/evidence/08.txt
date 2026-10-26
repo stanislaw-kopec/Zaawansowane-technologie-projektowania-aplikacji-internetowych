@@ -1,0 +1,36 @@
+curl.exe -i "http://localhost:51230/api/rooms/1"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": 1,
+  "name": "101",
+  "capacity": 30,
+  "building": {
+    "id": 1,
+    "name": "Budynek A"
+  }
+}
+
+curl.exe -i "http://localhost:51230/api/reservations/1"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+{
+  "id": 1,
+  "room": {
+    "id": 1,
+    "name": "101",
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  },
+  "reservedBy": "Jan Kowalski",
+  "participants": 5,
+  "startTime": "2026-01-02T10:00:00.000Z",
+  "endTime": "2026-01-02T11:00:00.000Z",
+  "status": "CONFIRMED",
+  "createdAt": "2026-01-01T08:00:00.000Z",
+  "cancelledAt": null
+}

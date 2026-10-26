@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Seed uruchomiony dwukrotnie</h1><p>Zapis rzeczywistych wyników poleceń · 04</p><pre>Wywolanie: seed(db), snapshot, seed(db), porownanie deepStrictEqual
+Wynik: identyczne dane po obu uruchomieniach.
+[
+  {
+    "table": "buildings",
+    "count": 2,
+    "ids": [
+      1,
+      2
+    ]
+  },
+  {
+    "table": "rooms",
+    "count": 5,
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "table": "reservations",
+    "count": 5,
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+]
+ id |  status   |       start_time       |      cancelled_at      
+----+-----------+------------------------+------------------------
+  1 | CONFIRMED | 2026-01-02 10:00:00+00 | 
+  2 | CANCELLED | 2026-11-10 10:00:00+00 | 2026-01-03 10:00:00+00
+  3 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+  4 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+  5 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+(5 rows)
+
+</pre>

@@ -1,0 +1,43 @@
+Wywolanie: seed(db), snapshot, seed(db), porownanie deepStrictEqual
+Wynik: identyczne dane po obu uruchomieniach.
+[
+  {
+    "table": "buildings",
+    "count": 2,
+    "ids": [
+      1,
+      2
+    ]
+  },
+  {
+    "table": "rooms",
+    "count": 5,
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  {
+    "table": "reservations",
+    "count": 5,
+    "ids": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  }
+]
+ id |  status   |       start_time       |      cancelled_at      
+----+-----------+------------------------+------------------------
+  1 | CONFIRMED | 2026-01-02 10:00:00+00 | 
+  2 | CANCELLED | 2026-11-10 10:00:00+00 | 2026-01-03 10:00:00+00
+  3 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+  4 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+  5 | CONFIRMED | 2026-11-10 10:00:00+00 | 
+(5 rows)
+

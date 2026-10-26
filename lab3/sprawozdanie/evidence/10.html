@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><style>body{margin:0;padding:28px;background:#f3f5f7;color:#15202b;font:16px Segoe UI}h1{font-size:23px;margin:0 0 8px}p{margin:0 0 18px;color:#52616d}pre{margin:0;padding:22px;background:white;border:1px solid #cbd5df;border-radius:7px;font:16px/1.5 Consolas,monospace;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>LAB 3 · Sale budynku</h1><p>Zapis rzeczywistych wyników poleceń · 10</p><pre>curl.exe -i "http://localhost:51230/api/buildings/1/rooms"
+
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+[
+  {
+    "id": 1,
+    "name": "101",
+    "capacity": 30,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  },
+  {
+    "id": 2,
+    "name": "102",
+    "capacity": 20,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  },
+  {
+    "id": 3,
+    "name": "103",
+    "capacity": 10,
+    "building": {
+      "id": 1,
+      "name": "Budynek A"
+    }
+  }
+]</pre>

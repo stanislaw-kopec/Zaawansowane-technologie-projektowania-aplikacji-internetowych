@@ -1,7 +1,12 @@
 const NotFoundError = require("../../errors/NotFoundError");
 
-function createRoomsService({ roomsRepository }) {
+function createRoomsService({ roomsRepository, buildingsRepository }) {
     return {
+        async createRoom(input) {
+            const building = await buildingsRepository.findById(input.buildingId);
+            if (!building) throw new NotFoundError("Building");
+            return roomsRepository.create(input);
+        },
         async listRooms() {
             return roomsRepository.list();
         },

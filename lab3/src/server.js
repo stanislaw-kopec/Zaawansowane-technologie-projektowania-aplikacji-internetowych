@@ -1,13 +1,16 @@
 const { createApp } = require("./app");
-const { createRoomsRepository } = require("./modules/rooms/rooms.repository.memory");
-const { createReservationsRepository } = require("./modules/reservations/reservations.repository.memory");
+const db = require("./db/knex");
+const { createBuildingsRepository } = require("./modules/buildings/buildings.repository.knex");
+const { createRoomsRepository } = require("./modules/rooms/rooms.repository.knex");
+const { createReservationsRepository } = require("./modules/reservations/reservations.repository.knex");
 
 const app = createApp({
-    roomsRepository: createRoomsRepository(),
-    reservationsRepository: createReservationsRepository({ includeStartedReservation: true }),
+    buildingsRepository: createBuildingsRepository(db),
+    roomsRepository: createRoomsRepository(db),
+    reservationsRepository: createReservationsRepository(db),
     enableDebugRoutes: process.argv.includes("--debug")
 });
 
-app.listen(3000, () => {
-    console.log("Server running on http://localhost:3000");
+const server = app.listen(process.env.PORT || 3000, () => {
+    console.log(`Server running on http://localhost:${server.address().port}`);
 });

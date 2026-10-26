@@ -9,13 +9,18 @@ const { createReservationsService } = require("./modules/reservations/reservatio
 const { createReservationsController } = require("./modules/reservations/reservations.controller");
 const { createReservationsRouter } = require("./modules/reservations/reservations.routes");
 
-function createApp({ roomsRepository, reservationsRepository, now, enableDebugRoutes = false }) {
+const { createBuildingsService } = require("./modules/buildings/buildings.service");
+const { createBuildingsController } = require("./modules/buildings/buildings.controller");
+const { createBuildingsRouter } = require("./modules/buildings/buildings.routes");
+
+function createApp({ buildingsRepository, roomsRepository, reservationsRepository, now, enableDebugRoutes = false }) {
     const app = express();
     app.use(requestLogger);
     app.use(express.json());
 
-    const roomsService = createRoomsService({ roomsRepository });
+    const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
     const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now });
+    app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository }))));
     app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
     app.use("/api/reservations", createReservationsRouter(createReservationsController(reservationsService)));
     // Tymczasowy endpoint do demonstracji 500; wlaczany jawnie podczas uruchamiania.

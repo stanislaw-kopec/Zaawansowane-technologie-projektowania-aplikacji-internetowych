@@ -15,6 +15,10 @@ function errorHandler(error, req, res, next) {
         response.code = error.code;
         response.message = error.message;
         if (error.details !== undefined) response.details = error.details;
+    } else if (error.code === "23505") {
+        statusCode = 409;
+        response.code = "CONFLICT";
+        response.message = "Resource already exists";
     } else if (error.type === "entity.parse.failed") {
         statusCode = 400;
         response.code = "INVALID_JSON";

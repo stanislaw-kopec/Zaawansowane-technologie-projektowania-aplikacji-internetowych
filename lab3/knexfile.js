@@ -13,5 +13,6 @@ if (!process.env.DATABASE_URL) {
 module.exports = {
     client: "pg",
     connection: process.env.DATABASE_URL,
-    migrations: { directory: path.join(__dirname, "src/db/migrations") }
+    migrations: { directory: path.join(__dirname, "src/db/migrations") },
+    seeds: { directory: path.join(__dirname, "src/db/seeds") }
 };

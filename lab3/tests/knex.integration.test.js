@@ -94,21 +94,67 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
             assert.equal(detail.roomId, undefined);
             await countedGet("/reservations/999999", 1, 404);
             await countedGet("/reservations/invalid", 0, 400);
-            const five = await countedGet("/reservations", 1);
-            assert.equal(five.length, 5);
-            assert.deepEqual(five[0], detail);
+            const five = await countedGet("/reservations", 2);
+            assert.equal(five.data.length, 5);
+            assert.deepEqual(five.data[0], detail);
             console.log("5 reservations: " + queries.join("; "));
             const added = await db("reservations").insert(Array.from({ length: 15 }, (_, i) => ({
                 room_id: 1, reserved_by: "Query count test", participants: 1,
                 start_time: new Date(Date.UTC(2030, 0, i + 1, 10)),
                 end_time: new Date(Date.UTC(2030, 0, i + 1, 11)), status: "CONFIRMED"
             }))).returning("id");
-            const twenty = await countedGet("/reservations", 1);
-            assert.equal(twenty.length, 20);
-            assert.deepEqual(twenty[0], detail);
-            assert.ok(twenty.every(r => r.room.building.name));
+            const twenty = await countedGet("/reservations", 2);
+            assert.equal(twenty.data.length, 20);
+            assert.deepEqual(twenty.data[0], detail);
+            assert.ok(twenty.data.every(r => r.room.building.name));
             console.log("20 reservations: " + queries.join("; "));
-            await db("reservations").whereIn("id", added.map(r => r.id)).del();
+            assert.deepEqual(five.meta, { page: 1, limit: 20, total: 5, totalPages: 1 });
+            async function checkPage(params, ids, meta) {
+                const result = await countedGet("/reservations?" + params, 2);
+                assert.deepEqual(result.data.map(r => r.id), ids);
+                assert.deepEqual(result.meta, meta);
+                console.log(params + " SQL: " + queries.join("; "));
+            }
+            await checkPage("buildingId=1&status=CONFIRMED&page=2&limit=2&sort=startTime",
+                added.slice(0, 2).map(r => r.id), { page: 2, limit: 2, total: 17, totalPages: 9 });
+            await checkPage("roomId=2&status=CANCELLED&sort=-createdAt",
+                [2], { page: 1, limit: 20, total: 1, totalPages: 1 });
+            await checkPage("from=2026-11-10T10:15:00Z&to=2026-11-10T10:30:00Z&sort=-participants&limit=2",
+                [2, 3], { page: 1, limit: 2, total: 4, totalPages: 2 });
+            await checkPage("buildingId=2&sort=-startTime&page=99&limit=1",
+                [], { page: 99, limit: 1, total: 2, totalPages: 2 });
+            await checkPage("roomId=2&from=2026-11-10T11:00:00Z", [], { page: 1, limit: 20, total: 0, totalPages: 0 });
+            await checkPage("roomId=2&to=2026-11-10T10:00:00Z", [], { page: 1, limit: 20, total: 0, totalPages: 0 });
+            await checkPage("roomId=2&buildingId=2", [], { page: 1, limit: 20, total: 0, totalPages: 0 });
+            for (const sort of ["startTime", "-startTime", "createdAt", "-createdAt", "participants", "-participants"]) {
+                const rows = await db("reservations");
+                const field = { startTime: "start_time", createdAt: "created_at", participants: "participants" }[sort.replace("-", "")];
+                rows.sort((a, b) => (sort.startsWith("-") ? -1 : 1) * (a[field] - b[field]) || a.id - b.id);
+                await checkPage(`sort=${sort}&limit=100`, rows.map(r => r.id), { page: 1, limit: 100, total: 20, totalPages: 1 });
+            }
+            for (const params of ["page=0", "page=1.5", "limit=0", "limit=101", "limit=abc", "roomId=-1", "buildingId=abc",
+                "status=INVALID", "sort=unknown", "sort=start_time", "from=bad",
+                "from=2026-11-10T11:00:00Z&to=2026-11-10T10:00:00Z",
+                "from=2026-11-10T11:00:00Z&to=2026-11-10T11:00:00Z"]) {
+                await countedGet("/reservations?" + params, 0, 400);
+            }
+            // A conflict beyond the first page must still be detected.
+            const more = await db("reservations").insert(Array.from({ length: 6 }, (_, i) => ({
+                room_id: 1, reserved_by: "Later page", participants: 1,
+                start_time: new Date(Date.UTC(2031, 0, i + 1, 10)),
+                end_time: new Date(Date.UTC(2031, 0, i + 1, 11)), status: "CONFIRMED"
+            }))).returning("id");
+            const conflictResponse = await fetch(`http://localhost:${http.address().port}/api/reservations`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ roomId: 1, reservedBy: "Conflict test", participants: 1,
+                    startTime: "2031-01-06T10:00:00Z", endTime: "2031-01-06T11:00:00Z" })
+            });
+            assert.equal(conflictResponse.status, 409);
+            assert.equal((await conflictResponse.json()).error.code, "ROOM_ALREADY_BOOKED");
+            const defaultPage = await countedGet("/reservations", 2);
+            assert.equal(defaultPage.data.length, 20);
+            assert.deepEqual(defaultPage.meta, { page: 1, limit: 20, total: 26, totalPages: 2 });
+            await db("reservations").whereIn("id", [...added, ...more].map(r => r.id)).del();
         } finally {
             db.off("query", capture);
             await new Promise(resolve => http.close(resolve));
@@ -138,7 +184,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         await start();
         assert.deepEqual(await request("GET", `/buildings/${building.id}`, undefined, 200), building);
         assert.deepEqual(await request("GET", `/rooms/${room.id}`, undefined, 200), room);
-        assert.deepEqual(await request("GET", `/reservations?roomId=${room.id}`, undefined, 200), [reservation]);
+        assert.deepEqual((await request("GET", `/reservations?roomId=${room.id}`, undefined, 200)).data, [reservation]);
         const cancelled = await request("PATCH", `/reservations/${reservation.id}/cancel`, undefined, 200);
         assert.equal(cancelled.status, "CANCELLED");
         assert.ok(cancelled.cancelledAt);

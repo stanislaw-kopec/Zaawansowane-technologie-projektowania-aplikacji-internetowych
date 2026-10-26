@@ -1,4 +1,4 @@
-# Laboratorium 3 — zadania 1-3
+# Laboratorium 3 — zadania 1-4
 
 ## Uruchomienie bazy i migracji
 
@@ -65,7 +65,7 @@ Remove-Item Env:RUN_DB_TESTS
 - `GET /api/reservations/:id` oraz lista rezerwacji zawierają `room` z zagnieżdżonym `building`.
 - `GET /api/buildings` zawiera liczbowe `roomsCount`, również `0` dla pustego budynku.
 
-Lista sal budynku wykonuje 2 zapytania (istnienie budynku i sale). Pozostałe wymienione odczyty wykonują po 1 zapytaniu. Test bazy sprawdza także listę przy 5 i 20 rezerwacjach w oddzielnym schemacie.
+Lista sal budynku wykonuje 2 zapytania (istnienie budynku i sale). Pozostałe wymienione odczyty wykonują po 1 zapytaniu, z wyjątkiem listy rezerwacji: od zadania 4 wykonuje 2 (dane strony i licznik). Test bazy sprawdza także listę przy 5 i 20 rezerwacjach w oddzielnym schemacie.
 
 Logi SQL podczas pracy API:
 
@@ -75,3 +75,20 @@ npm start
 ```
 
 Po zakończeniu: `Remove-Item Env:DEBUG`.
+
+## Zadanie 4
+
+`GET /api/reservations` zwraca `{ data: [...], meta: { page, limit, total, totalPages } }`.
+
+Parametry opcjonalne: `roomId`, `buildingId`, `status` (`CONFIRMED` / `CANCELLED`), `from`, `to`, `page` (domyślnie 1), `limit` (1–100, domyślnie 20), `sort` (domyślnie `startTime`). Sortowanie: `startTime`, `createdAt`, `participants`; prefiks `-` oznacza malejąco. Remisy rozstrzyga `id` rosnąco.
+
+Przykłady:
+
+```text
+/api/reservations?buildingId=1&status=CONFIRMED&page=2&limit=2&sort=startTime
+/api/reservations?roomId=2&status=CANCELLED&sort=-createdAt
+/api/reservations?from=2026-11-10T10:15:00Z&to=2026-11-10T10:30:00Z&sort=-participants&limit=2
+/api/reservations?buildingId=2&sort=-startTime&page=99&limit=1
+```
+
+Daty filtrują nakładanie się przedziałów: `end_time > from` i `start_time < to`. Niepoprawne parametry, w tym `from >= to`, zwracają `400`. Strona poza zakresem zwraca `200` z pustym `data`, zachowując licznik pasujących rekordów.

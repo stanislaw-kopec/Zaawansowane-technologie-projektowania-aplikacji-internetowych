@@ -6,8 +6,12 @@ function createReservationsController(reservationsService) {
             res.json(toReservationResponse(await reservationsService.getReservation(req.validated.params.id)));
         },
         async list(req, res) {
-            const reservations = await reservationsService.listReservations(req.validated.query);
-            res.json(reservations.map(toReservationResponse));
+            const { page, limit } = req.validated.query;
+            const { items, total } = await reservationsService.listReservations(req.validated.query);
+            res.json({
+                data: items.map(toReservationResponse),
+                meta: { page, limit, total, totalPages: Math.ceil(total / limit) }
+            });
         },
         async create(req, res) {
             const input = req.validated.body;

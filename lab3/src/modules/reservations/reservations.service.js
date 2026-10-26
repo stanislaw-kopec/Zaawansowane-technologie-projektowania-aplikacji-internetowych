@@ -19,7 +19,7 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
             return reservation;
         },
         async listReservations(filters) {
-            return reservationsRepository.list(filters);
+            return reservationsRepository.listPage(filters);
         },
         async createReservation(input) {
             const room = await roomsRepository.findById(input.roomId);

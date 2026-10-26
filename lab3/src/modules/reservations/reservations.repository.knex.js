@@ -1,3 +1,5 @@
+const SORT_COLUMNS = { startTime: "res.start_time", createdAt: "res.created_at", participants: "res.participants" };
+
 function toReservation(row) {
     return row ? {
         id: row.id, roomId: row.room_id, reservedBy: row.reserved_by,
@@ -13,6 +15,22 @@ function createReservationsRepository(db) {
         .select("res.*", "r.name as room_name", "b.id as building_id", "b.name as building_name");
     const findById = async id => toReservation(await query().where("res.id", id).first());
     return {
+        async listPage({ roomId, buildingId, status, from, to, page = 1, limit = 20, sort = "startTime" } = {}) {
+            const base = query();
+            if (roomId !== undefined) base.where("res.room_id", roomId);
+            if (buildingId !== undefined) base.where("r.building_id", buildingId);
+            if (status !== undefined) base.where("res.status", status);
+            if (from !== undefined) base.where("res.end_time", ">", from);
+            if (to !== undefined) base.where("res.start_time", "<", to);
+            const descending = sort.startsWith("-");
+            const column = SORT_COLUMNS[descending ? sort.slice(1) : sort];
+            const [rows, count] = await Promise.all([
+                base.clone().orderBy(column, descending ? "desc" : "asc").orderBy("res.id", "asc")
+                    .limit(limit).offset((page - 1) * limit),
+                base.clone().clearSelect().count({ total: "res.id" }).first()
+            ]);
+            return { items: rows.map(toReservation), total: Number(count.total) };
+        },
         async list({ roomId } = {}) {
             const rows = query().orderBy("res.id");
             if (roomId !== undefined) rows.where("res.room_id", roomId);

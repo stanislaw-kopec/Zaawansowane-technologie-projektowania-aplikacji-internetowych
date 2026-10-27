@@ -2,6 +2,8 @@ const { test } = require("node:test");
 const assert = require("node:assert/strict");
 const knex = require("knex");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { randomBytes } = require("node:crypto");
 const { createApp } = require("../src/app");
 const { createUsersRepository } = require("../src/modules/auth/users.repository.knex");
 
@@ -15,6 +17,7 @@ test("registration, bcrypt, validation, admin seed and concurrent duplicate emai
     url.searchParams.set("options", `-c search_path=${schema},public`);
     const db = knex({ client: "pg", connection: url.toString() });
     let server;
+    const jwtSecret = randomBytes(48).toString("base64");
     try {
         await admin.raw("CREATE SCHEMA ??", [schema]);
         const migration = require("../src/db/migrations/202610260003_create_users");
@@ -43,7 +46,7 @@ test("registration, bcrypt, validation, admin seed and concurrent duplicate emai
             }
             return result;
         };
-        server = createApp({ usersRepository }).listen(0);
+        server = createApp({ usersRepository, jwtSecret }).listen(0);
         await new Promise(resolve => server.once("listening", resolve));
         async function register(body) {
             const response = await fetch(`http://localhost:${server.address().port}/api/auth/register`, {
@@ -62,6 +65,52 @@ test("registration, bcrypt, validation, admin seed and concurrent duplicate emai
         assert.notEqual(saved.password_hash, input.password);
         assert.ok(bcrypt.getRounds(saved.password_hash) >= 10);
         assert.ok(await bcrypt.compare(input.password, saved.password_hash));
+        async function login(email, password) {
+            const response = await fetch(`http://localhost:${server.address().port}/api/auth/login`, {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password })
+            });
+            return { status: response.status, body: await response.json() };
+        }
+        async function me(token) {
+            const response = await fetch(`http://localhost:${server.address().port}/api/auth/me`, {
+                headers: token === undefined ? {} : { Authorization: `Bearer ${token}` }
+            });
+            return { status: response.status, body: await response.json() };
+        }
+        const loggedIn = await login("JAN.KOWALSKI@EXAMPLE.COM", input.password);
+        assert.equal(loggedIn.status, 200);
+        assert.equal(loggedIn.body.tokenType, "Bearer");
+        assert.equal(loggedIn.body.expiresIn, "15m");
+        const token = loggedIn.body.accessToken;
+        const payload = jwt.verify(token, jwtSecret, { algorithms: ["HS256"] });
+        assert.equal(jwt.decode(token, { complete: true }).header.alg, "HS256");
+        assert.deepEqual(Object.keys(payload).sort(), ["exp", "iat", "role", "sub"]);
+        assert.equal(payload.sub, String(created.body.id));
+        assert.equal(payload.role, "USER");
+        assert.equal(payload.exp - payload.iat, 900);
+        assert.deepEqual(await me(token), { status: 200, body: created.body });
+        const badEmail = await login("absent@example.com", input.password);
+        const badPassword = await login(input.email, "wrong-password");
+        for (const response of [badEmail, badPassword]) {
+            assert.equal(response.status, 401);
+            assert.equal(response.body.error.code, "UNAUTHORIZED");
+            assert.equal(response.body.error.message, "Invalid email or password");
+        }
+        assert.equal((await me()).status, 401);
+        assert.equal((await me(jwt.sign({ role: "USER" }, "wrong-secret", { subject: payload.sub, expiresIn: "15m" }))).status, 401);
+        assert.equal((await me(jwt.sign({ role: "USER" }, jwtSecret, { subject: payload.sub, algorithm: "HS384", expiresIn: "15m" }))).status, 401);
+        const expired = await me(jwt.sign({ role: "USER" }, jwtSecret, { subject: payload.sub, expiresIn: -1 }));
+        assert.equal(expired.status, 401);
+        assert.equal(expired.body.error.message, "Token expired");
+        const auth = require("../src/modules/auth/auth.service").createAuthService({ usersRepository, jwtSecret, jwtExpiresIn: "10s" });
+        const short = await auth.login({ email: input.email.toLowerCase(), password: input.password });
+        const shortPayload = jwt.verify(short.accessToken, jwtSecret, { algorithms: ["HS256"] });
+        assert.equal(short.expiresIn, "10s");
+        assert.equal(shortPayload.exp - shortPayload.iat, 10);
+        assert.throws(() => jwt.verify(short.accessToken, jwtSecret, { algorithms: ["HS256"], clockTimestamp: shortPayload.exp }), { name: "TokenExpiredError" });
+        const adminLogin = await login("admin@example.com", "admin-password-123");
+        assert.equal(adminLogin.status, 200);
+        assert.equal((await me(adminLogin.body.accessToken)).body.role, "ADMIN");
         const duplicate = await register({ ...input, email: "JAN.KOWALSKI@EXAMPLE.COM" });
         assert.equal(duplicate.status, 409);
         assert.equal(duplicate.body.error.code, "EMAIL_TAKEN");

@@ -6,7 +6,12 @@ const { createReservationsRepository } = require("./modules/reservations/reserva
 
 const { createUsersRepository } = require("./modules/auth/users.repository.knex");
 
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+    throw new Error("Set JWT_SECRET to at least 32 characters in lab4/.env");
+}
 const app = createApp({
+    jwtSecret: process.env.JWT_SECRET,
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || "15m",
     usersRepository: createUsersRepository(db),
     buildingsRepository: createBuildingsRepository(db),
     roomsRepository: createRoomsRepository(db),

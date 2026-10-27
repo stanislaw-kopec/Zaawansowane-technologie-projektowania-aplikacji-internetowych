@@ -16,14 +16,16 @@ const { createBuildingsRouter } = require("./modules/buildings/buildings.routes"
 const { createAuthService } = require("./modules/auth/auth.service");
 const { createAuthRouter } = require("./modules/auth/auth.routes");
 
-function createApp({ usersRepository, buildingsRepository, roomsRepository, reservationsRepository, now, runInTransaction, enableDebugRoutes = false }) {
+const authenticate = require("./middleware/authenticate");
+
+function createApp({ jwtSecret, jwtExpiresIn, usersRepository, buildingsRepository, roomsRepository, reservationsRepository, now, runInTransaction, enableDebugRoutes = false }) {
     const app = express();
     app.use(requestLogger);
     app.use(express.json());
 
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
     const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction });
-    app.use("/api/auth", createAuthRouter(createAuthService({ usersRepository })));
+    app.use("/api/auth", createAuthRouter(createAuthService({ usersRepository, jwtSecret, jwtExpiresIn }), authenticate(jwtSecret)));
     app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository, roomsRepository }))));
     app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
     app.use("/api/reservations", createReservationsRouter(createReservationsController(reservationsService)));

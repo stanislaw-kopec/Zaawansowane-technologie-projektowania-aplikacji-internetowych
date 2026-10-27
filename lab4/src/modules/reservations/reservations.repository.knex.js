@@ -2,7 +2,7 @@ const SORT_COLUMNS = { startTime: "res.start_time", createdAt: "res.created_at",
 
 function toReservation(row) {
     return row ? {
-        id: row.id, roomId: row.room_id, reservedBy: row.reserved_by,
+        id: row.id, roomId: row.room_id, userId: row.user_id, user: { id: row.user_id, email: row.user_email },
         participants: row.participants, startTime: row.start_time, endTime: row.end_time,
         status: row.status, cancelledAt: row.cancelled_at, createdAt: row.created_at,
         room: { id: row.room_id, name: row.room_name, building: { id: row.building_id, name: row.building_name } }
@@ -12,7 +12,8 @@ function createReservationsRepository(db) {
     const query = () => db("reservations as res")
         .join("rooms as r", "r.id", "res.room_id")
         .join("buildings as b", "b.id", "r.building_id")
-        .select("res.*", "r.name as room_name", "b.id as building_id", "b.name as building_name");
+        .join("users as u", "u.id", "res.user_id")
+        .select("u.email as user_email", "res.*", "r.name as room_name", "b.id as building_id", "b.name as building_name");
     const findById = async id => toReservation(await query().where("res.id", id).first());
     return {
         async listPage({ roomId, buildingId, status, from, to, page = 1, limit = 20, sort = "startTime" } = {}) {
@@ -37,9 +38,9 @@ function createReservationsRepository(db) {
             return (await rows).map(toReservation);
         },
         findById,
-        async create({ roomId, reservedBy, participants, startTime, endTime, status }) {
+        async create({ roomId, userId, participants, startTime, endTime, status }) {
             const [row] = await db("reservations").insert({
-                room_id: roomId, reserved_by: reservedBy, participants,
+                room_id: roomId, user_id: userId, participants,
                 start_time: startTime, end_time: endTime, status
             }).returning("*");
             return row ? findById(row.id) : null;

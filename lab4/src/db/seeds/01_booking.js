@@ -1,6 +1,11 @@
+const bcrypt = require("bcryptjs");
 exports.seed = async function (knex) {
     await knex.transaction(async trx => {
         await trx.raw("TRUNCATE reservations, rooms, buildings RESTART IDENTITY");
+        await trx("users").insert({ email: "jan.kowalski@example.com",
+            password_hash: await bcrypt.hash("user-password-123", 10), role: "USER"
+        }).onConflict("email").ignore();
+        const user = await trx("users").where({ email: "jan.kowalski@example.com" }).first();
         const createdAt = "2026-01-01T08:00:00Z";
         await trx("buildings").insert([
             { name: "Budynek A", address: "ul. Warszawska 24, Krakow", created_at: createdAt },
@@ -19,6 +24,6 @@ exports.seed = async function (knex) {
             { room_id: 3, start_time: "2026-11-10T10:00:00Z", end_time: "2026-11-10T11:00:00Z", status: "CONFIRMED", cancelled_at: null },
             { room_id: 4, start_time: "2026-11-10T10:00:00Z", end_time: "2026-11-10T11:00:00Z", status: "CONFIRMED", cancelled_at: null },
             { room_id: 5, start_time: "2026-11-10T10:00:00Z", end_time: "2026-11-10T11:00:00Z", status: "CONFIRMED", cancelled_at: null }
-        ].map(row => ({ ...row, reserved_by: "Jan Kowalski", participants: 5, created_at: createdAt })));
+        ].map(row => ({ ...row, user_id: user.id, participants: 5, created_at: createdAt })));
     });
 };

@@ -15,7 +15,7 @@ function createReservationsController(reservationsService) {
         },
         async create(req, res) {
             const input = req.validated.body;
-            const reservation = await reservationsService.createReservation(input);
+            const reservation = await reservationsService.createReservation(input, req.user);
             res.location(`/api/reservations/${reservation.id}`)
                 .status(201)
                 .json(toReservationResponse(reservation));

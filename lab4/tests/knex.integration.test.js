@@ -13,12 +13,15 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
     const url = new URL(config.connection);
     url.searchParams.set("options", `-c search_path=${schema},public`);
     const db = knex({ client: "pg", connection: url.toString() });
+    const jwtSecret = require("node:crypto").randomBytes(48).toString("base64");
+    let token;
+    let userId;
     let server;
     let base;
     async function start() {
         server = spawn(process.execPath, ["src/server.js"], {
             cwd: path.join(__dirname, ".."),
-            env: { ...process.env, DATABASE_URL: url.toString(), PORT: "0" },
+            env: { ...process.env, DATABASE_URL: url.toString(), PORT: "0", JWT_SECRET: jwtSecret },
             stdio: ["ignore", "pipe", "pipe"]
         });
         await new Promise((resolve, reject) => {
@@ -37,7 +40,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
     }
     async function request(method, route, body, status) {
         const response = await fetch(base + "/api" + route, {
-            method, headers: { "Content-Type": "application/json" },
+            method, headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             body: body === undefined ? undefined : JSON.stringify(body)
         });
         const data = await response.json();
@@ -48,10 +51,14 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         await admin.raw("CREATE SCHEMA ??", [schema]);
         await require("../src/db/migrations/202610260001_create_booking_tables").up(db);
         await require("../src/db/migrations/202610260002_prevent_double_booking").up(db);
+        await require("../src/db/migrations/202610260003_create_users").up(db);
+        await require("../src/db/migrations/202610270001_reservations_user").up(db);
         const seed = require("../src/db/seeds/01_booking").seed;
         const snapshot = async () => Promise.all(["buildings", "rooms", "reservations"].map(t => db(t).orderBy("id")));
         await seed(db);
         const first = await snapshot();
+        userId = (await db("users").where({ email: "jan.kowalski@example.com" }).first()).id;
+        token = require("jsonwebtoken").sign({ role: "USER" }, jwtSecret, { subject: String(userId), expiresIn: "15m" });
         await seed(db);
         assert.deepEqual(await snapshot(), first);
         assert.deepEqual(first.map(rows => rows.length), [2, 5, 5]);
@@ -60,7 +67,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         assert.ok(first[2].some(r => r.status === "CONFIRMED" && r.start_time < new Date()));
         // Count actual SQL queries made by HTTP handlers using the same repositories.
         const { createApp } = require("../src/app");
-        const app = createApp({
+        const app = createApp({ jwtSecret,
             buildingsRepository: require("../src/modules/buildings/buildings.repository.knex").createBuildingsRepository(db),
             roomsRepository: require("../src/modules/rooms/rooms.repository.knex").createRoomsRepository(db),
             reservationsRepository: require("../src/modules/reservations/reservations.repository.knex").createReservationsRepository(db),
@@ -76,7 +83,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         db.on("query", capture);
         async function countedGet(route, count, status = 200) {
             queries.length = 0;
-            const response = await fetch(`http://localhost:${http.address().port}/api${route}`);
+            const response = await fetch(`http://localhost:${http.address().port}/api${route}`, { headers: { Authorization: `Bearer ${token}` } });
             const data = await response.json();
             assert.equal(response.status, status);
             assert.equal(queries.length, count, route);
@@ -104,7 +111,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
             assert.deepEqual(five.data[0], detail);
             console.log("5 reservations: " + queries.join("; "));
             const added = await db("reservations").insert(Array.from({ length: 15 }, (_, i) => ({
-                room_id: 1, reserved_by: "Query count test", participants: 1,
+                room_id: 1, user_id: userId, participants: 1,
                 start_time: new Date(Date.UTC(2030, 0, i + 1, 10)),
                 end_time: new Date(Date.UTC(2030, 0, i + 1, 11)), status: "CONFIRMED"
             }))).returning("id");
@@ -145,13 +152,13 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
             }
             // A conflict beyond the first page must still be detected.
             const more = await db("reservations").insert(Array.from({ length: 6 }, (_, i) => ({
-                room_id: 1, reserved_by: "Later page", participants: 1,
+                room_id: 1, user_id: userId, participants: 1,
                 start_time: new Date(Date.UTC(2031, 0, i + 1, 10)),
                 end_time: new Date(Date.UTC(2031, 0, i + 1, 11)), status: "CONFIRMED"
             }))).returning("id");
             const conflictResponse = await fetch(`http://localhost:${http.address().port}/api/reservations`, {
-                method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ roomId: 1, reservedBy: "Conflict test", participants: 1,
+                method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ roomId: 1, participants: 1,
                     startTime: "2031-01-06T10:00:00Z", endTime: "2031-01-06T11:00:00Z" })
             });
             assert.equal(conflictResponse.status, 409);
@@ -182,7 +189,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         assert.equal(conflict.error.detail, undefined);
         const startTime = new Date(Date.now() + 86400000).toISOString();
         const endTime = new Date(Date.parse(startTime) + 3600000).toISOString();
-        const reservationInput = { roomId: room.id, reservedBy: "Jan Test", participants: 5, startTime, endTime };
+        const reservationInput = { roomId: room.id, participants: 5, startTime, endTime };
         const reservation = await request("POST", "/reservations", reservationInput, 201);
         await request("POST", "/reservations", reservationInput, 409);
         await stop();

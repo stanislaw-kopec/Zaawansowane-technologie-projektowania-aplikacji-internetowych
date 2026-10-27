@@ -13,7 +13,9 @@ test("double booking demonstration", { skip: process.env.RUN_DB_TESTS !== "1", t
     const url = new URL(config.connection);
     url.searchParams.set("options", `-c search_path=${schema},public`);
     const db = knex({ client: "pg", connection: url.toString(), pool: { min: 0, max: 12 } });
-    const input = { roomId: 1, reservedBy: "Concurrency test", participants: 1,
+    const jwtSecret = require("node:crypto").randomBytes(48).toString("base64");
+    const token = require("jsonwebtoken").sign({ role: "USER" }, jwtSecret, { subject: "1", expiresIn: "15m" });
+    const input = { roomId: 1, participants: 1,
         startTime: new Date(Date.now() + 86400000).toISOString(),
         endTime: new Date(Date.now() + 90000000).toISOString() };
     function repositories(connection) {
@@ -29,15 +31,18 @@ test("double booking demonstration", { skip: process.env.RUN_DB_TESTS !== "1", t
     }
     async function scenario(label, options) {
         console.log(label);
-        const server = createApp(options).listen(0);
+        const server = createApp({ ...options, jwtSecret }).listen(0);
         await new Promise(resolve => server.once("listening", resolve));
         try {
-            return await runDoubleBooking({ db, baseUrl: `http://localhost:${server.address().port}`, input });
+            return await runDoubleBooking({ db, baseUrl: `http://localhost:${server.address().port}`, input, token });
         } finally { await new Promise(resolve => server.close(resolve)); }
     }
     try {
         await admin.raw("CREATE SCHEMA ??", [schema]);
         await require("../src/db/migrations/202610260001_create_booking_tables").up(db);
+        await require("../src/db/migrations/202610260003_create_users").up(db);
+        await require("../src/db/migrations/202610270001_reservations_user").up(db);
+        await db("users").insert({ email: "race@example.com", password_hash: "unused", role: "USER" });
         await db("buildings").insert({ name: "Race test", address: "Test" });
         await db("rooms").insert({ building_id: 1, name: "101", capacity: 10 });
         const unsafe = repositories(db);
@@ -70,11 +75,11 @@ test("double booking demonstration", { skip: process.env.RUN_DB_TESTS !== "1", t
         assertProtected(constraintOnly);
         // Database-level checks also work without any service validation.
         const original = await db("reservations").first();
-        const adjacent = { room_id: 1, reserved_by: "Adjacent", participants: 1, status: "CONFIRMED",
+        const adjacent = { room_id: 1, user_id: 1, participants: 1, status: "CONFIRMED",
             start_time: input.endTime, end_time: new Date(Date.parse(input.endTime) + 3600000) };
         await db("reservations").insert(adjacent);
         await db("reservations").where({ id: original.id }).update({ status: "CANCELLED", cancelled_at: new Date() });
-        const duplicate = { room_id: 1, reserved_by: "Replacement", participants: 1, status: "CONFIRMED",
+        const duplicate = { room_id: 1, user_id: 1, participants: 1, status: "CONFIRMED",
             start_time: input.startTime, end_time: input.endTime };
         await db("reservations").insert(duplicate);
         await assert.rejects(db("reservations").insert(duplicate), { code: "23P01" });

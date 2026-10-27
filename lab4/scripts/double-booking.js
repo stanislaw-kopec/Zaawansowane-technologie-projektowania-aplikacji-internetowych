@@ -1,7 +1,7 @@
-async function runDoubleBooking({ db, baseUrl, input }) {
+async function runDoubleBooking({ db, baseUrl, input, token }) {
     const results = await Promise.all(Array.from({ length: 10 }, async (_, index) => {
         const response = await fetch(`${baseUrl}/api/reservations`, {
-            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
+            method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(input)
         });
         const body = await response.json();
         console.log(`Request ${index + 1}: ${response.status}`);
@@ -17,8 +17,8 @@ if (require.main === module) {
     const db = require("../src/db/knex");
     const startTime = process.argv[3] || new Date(Date.now() + 86400000).toISOString();
     runDoubleBooking({
-        db, baseUrl: process.env.BASE_URL || "http://localhost:3000",
-        input: { roomId: Number(process.argv[2] || 1), reservedBy: "Concurrency test", participants: 1,
+        db, baseUrl: process.env.BASE_URL || "http://localhost:3001", token: process.env.ACCESS_TOKEN,
+        input: { roomId: Number(process.argv[2] || 1), participants: 1,
             startTime, endTime: new Date(Date.parse(startTime) + 3600000).toISOString() }
     }).catch(error => { console.error(error.message); process.exitCode = 1; }).finally(() => db.destroy());
 }

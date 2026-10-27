@@ -8,7 +8,7 @@ function createReservationsRepository({ includeStartedReservation = false } = {}
         reservations.push({
             id: nextReservationId++,
             roomId: 1,
-            reservedBy: "Started reservation (seed)",
+            userId: 1, user: { id: 1, email: "jan.kowalski@example.com" },
             participants: 5,
             startTime: new Date(createdAt.getTime() - 2 * 60 * 60 * 1000),
             endTime: new Date(createdAt.getTime() - 60 * 60 * 1000),

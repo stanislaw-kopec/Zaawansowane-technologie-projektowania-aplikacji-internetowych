@@ -23,7 +23,7 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
         async listReservations(filters) {
             return reservationsRepository.listPage(filters);
         },
-        async createReservation(input) {
+        async createReservation(input, currentUser) {
             return runInTransaction(async ({ roomsRepository, reservationsRepository }) => {
                 await roomsRepository.lockById(input.roomId);
                 const room = await roomsRepository.findById(input.roomId);
@@ -56,7 +56,7 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
                     throw new ConflictError("Room already booked for this time interval", "ROOM_ALREADY_BOOKED");
                 }
 
-                return reservationsRepository.create({ ...input, status: "CONFIRMED" });
+                return reservationsRepository.create({ ...input, userId: currentUser.id, status: "CONFIRMED" });
             });
         },
         async cancelReservation(id) {

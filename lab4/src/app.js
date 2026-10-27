@@ -26,6 +26,7 @@ function createApp({ jwtSecret, jwtExpiresIn, usersRepository, buildingsReposito
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
     const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction });
     app.use("/api/auth", createAuthRouter(createAuthService({ usersRepository, jwtSecret, jwtExpiresIn }), authenticate(jwtSecret)));
+    app.use(authenticate(jwtSecret));
     app.use("/api/buildings", createBuildingsRouter(createBuildingsController(createBuildingsService({ buildingsRepository, roomsRepository }))));
     app.use("/api/rooms", createRoomsRouter(createRoomsController(roomsService)));
     app.use("/api/reservations", createReservationsRouter(createReservationsController(reservationsService)));

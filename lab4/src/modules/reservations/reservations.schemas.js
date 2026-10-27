@@ -19,7 +19,6 @@ const listReservationsQuery = z.object({
 
 const createReservationBody = z.object({
     roomId: z.number().int().positive(),
-    reservedBy: z.string().trim().min(3).max(100),
     participants: z.number().int().positive(),
     startTime: z.iso.datetime({ offset: true }),
     endTime: z.iso.datetime({ offset: true })

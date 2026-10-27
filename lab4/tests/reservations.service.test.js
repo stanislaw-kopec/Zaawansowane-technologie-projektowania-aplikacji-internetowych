@@ -1,12 +1,18 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
-const { createReservationsService } = require("../src/modules/reservations/reservations.service");
+const { createReservationsService: createService } = require("../src/modules/reservations/reservations.service");
 const { createRoomsRepository } = require("../src/modules/rooms/rooms.repository.memory");
 const { createReservationsRepository } = require("../src/modules/reservations/reservations.repository.memory");
 
+function createReservationsService(options) {
+    const service = createService(options);
+    const create = service.createReservation;
+    service.createReservation = input => create(input, { id: 1, role: "USER" });
+    return service;
+}
 const fixedNow = new Date("2026-11-01T10:00:00Z");
 const input = {
-    roomId: 1, reservedBy: "Jan Kowalski", participants: 20,
+    roomId: 1, participants: 20,
     startTime: "2026-11-10T10:00:00Z", endTime: "2026-11-10T12:00:00Z"
 };
 

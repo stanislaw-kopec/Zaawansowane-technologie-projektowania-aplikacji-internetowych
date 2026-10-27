@@ -5,7 +5,7 @@ const path = require("node:path");
 const knex = require("knex");
 
 test("Knex seeds, HTTP endpoints and persistence after server restart", {
-    skip: process.env.RUN_DB_TESTS !== "1", timeout: 30000
+    skip: require("../src/config").RUN_DB_TESTS !== "1", timeout: 30000
 }, async () => {
     const config = require("../knexfile");
     const admin = knex(config);
@@ -21,7 +21,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
     async function start() {
         server = spawn(process.execPath, ["src/server.js"], {
             cwd: path.join(__dirname, ".."),
-            env: { ...process.env, DATABASE_URL: url.toString(), PORT: "0", JWT_SECRET: jwtSecret },
+            env: { ...require("../src/config").getEnvironment(), DATABASE_URL: url.toString(), PORT: "0", NODE_ENV: "test", JWT_SECRET: jwtSecret },
             stdio: ["ignore", "pipe", "pipe"]
         });
         await new Promise((resolve, reject) => {

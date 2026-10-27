@@ -6,7 +6,7 @@ const { createRoomsRepository } = require("../src/modules/rooms/rooms.repository
 const { createReservationsRepository } = require("../src/modules/reservations/reservations.repository.knex");
 const { runDoubleBooking } = require("../scripts/double-booking");
 
-test("double booking demonstration", { skip: process.env.RUN_DB_TESTS !== "1", timeout: 60000 }, async () => {
+test("double booking demonstration", { skip: require("../src/config").RUN_DB_TESTS !== "1", timeout: 60000 }, async () => {
     const config = require("../knexfile");
     const admin = knex(config);
     const schema = `lab3_race_${process.pid}`;

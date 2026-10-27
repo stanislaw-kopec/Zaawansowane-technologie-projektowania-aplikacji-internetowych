@@ -14,10 +14,11 @@ async function runDoubleBooking({ db, baseUrl, input, token }) {
 }
 
 if (require.main === module) {
+    const config = require("../src/config");
     const db = require("../src/db/knex");
     const startTime = process.argv[3] || new Date(Date.now() + 86400000).toISOString();
     runDoubleBooking({
-        db, baseUrl: process.env.BASE_URL || "http://localhost:3001", token: process.env.ACCESS_TOKEN,
+        db, baseUrl: config.BASE_URL, token: config.ACCESS_TOKEN,
         input: { roomId: Number(process.argv[2] || 1), participants: 1,
             startTime, endTime: new Date(Date.parse(startTime) + 3600000).toISOString() }
     }).catch(error => { console.error(error.message); process.exitCode = 1; }).finally(() => db.destroy());

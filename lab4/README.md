@@ -1,4 +1,4 @@
-# Laboratorium 4 — zadania 1-4
+# Laboratorium 4 — zadania 1-5
 
 W katalogu `lab4`:
 
@@ -46,7 +46,7 @@ W `.env`: `JWT_SECRET` (losowy sekret co najmniej 32 znaki) i `JWT_EXPIRES_IN=15
 
 Uruchom `npm run db:migrate`, następnie zrestartuj API. Nie trzeba ponownie uruchamiać seeda.
 
-Poza rejestracją i logowaniem endpointy wymagają `Authorization: Bearer <token>`. Brak nagłówka, zły format, podpis lub zmieniony payload zwracają `401`. Wygasły token: `401 Token expired`. Publiczna dokumentacja `/api/docs` należy do zadania 5.
+Poza rejestracją i logowaniem endpointy wymagają `Authorization: Bearer <token>`. Brak nagłówka, zły format, podpis lub zmieniony payload zwracają `401`. Wygasły token: `401 Token expired`. Dokumentacja `/api/docs` jest publiczna.
 
 Migracja zastępuje `reserved_by` kolumną `user_id` (NOT NULL, FK, ON DELETE RESTRICT), zachowując rekordy. Rezerwacje seeda przypisuje do `jan.kowalski@example.com`. Jeśli konto nie istnieje, tworzy je z demonstracyjnym hasłem `user-password-123`. Dla pozostałych dawnych nazw tworzy osobne konta techniczne z losowymi hasłami. Istniejące konta nie są nadpisywane. Cofnięcie migracji odtwarza tekst właściciela z emaila (dla konta demonstracyjnego: Jan Kowalski); nie usuwa użytkowników.
 
@@ -70,3 +70,15 @@ Skrypt współbieżności wymaga tokenu w zmiennej `ACCESS_TOKEN` i domyślnie u
 - ADMIN nadal podlega regułom kolizji, pojemności i zakazowi anulowania rozpoczętej rezerwacji.
 
 Test `tests/authorization.integration.test.js` sprawdza brak tokenu, właściciela, obcego użytkownika i ADMIN-a oraz wypisuje statusy endpointów.
+
+## Zadanie 5
+
+Konfiguracja jest odczytywana wyłącznie w `src/config/index.js` i walidowana przez Zod. Brak lub niepoprawne `DATABASE_URL`, `JWT_SECRET` (minimum 32 znaki), port lub czas ważności tokenu zatrzymują start z komunikatem wskazującym zmienną. `JWT_EXPIRES_IN` przyjmuje np. `15m`, `1h`, `30s`.
+
+Swagger UI: http://localhost:3001/api/docs (bez logowania). Specyfikacja: `src/docs/openapi.json`.
+
+1. W `POST /api/auth/login` wybierz **Try it out**, podaj dane konta i kliknij **Execute**.
+2. Skopiuj `accessToken`, kliknij **Authorize** i wklej sam token (bez prefiksu `Bearer`).
+3. W `GET /api/auth/me` wybierz **Try it out → Execute**. Poprawna odpowiedź: `200`.
+
+Dokumentacja obejmuje endpointy, parametry, requesty, odpowiedzi i wspólny schemat błędu. `.env` jest ignorowany, a `.env.example` zawiera jedynie przykładowe wartości. Sprawdzenie historii Git wykazało tylko placeholdery; bieżący sekret JWT i hasło bazy nie występują w historii.

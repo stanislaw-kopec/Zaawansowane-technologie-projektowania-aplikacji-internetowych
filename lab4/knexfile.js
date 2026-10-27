@@ -1,18 +1,10 @@
 const path = require("node:path");
 
-try {
-    process.loadEnvFile(path.join(__dirname, ".env"));
-} catch (error) {
-    if (error.code !== "ENOENT") throw error;
-}
-
-if (!process.env.DATABASE_URL) {
-    throw new Error("Set DATABASE_URL in lab4/.env or the environment");
-}
+const config = require("./src/config");
 
 module.exports = {
     client: "pg",
-    connection: process.env.DATABASE_URL,
+    connection: config.DATABASE_URL,
     migrations: { directory: path.join(__dirname, "src/db/migrations") },
     seeds: { directory: path.join(__dirname, "src/db/seeds") }
 };

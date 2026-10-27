@@ -5,7 +5,7 @@ const jwt = require("jsonwebtoken");
 const { randomBytes } = require("node:crypto");
 const { createApp } = require("../src/app");
 test("migration with existing reservations, token protection and token-only identity", {
-    skip: process.env.RUN_DB_TESTS !== "1", timeout: 30000
+    skip: require("../src/config").RUN_DB_TESTS !== "1", timeout: 30000
 }, async () => {
     const config = require("../knexfile");
     const admin = knex(config);

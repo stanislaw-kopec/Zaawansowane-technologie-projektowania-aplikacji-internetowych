@@ -8,7 +8,7 @@ const { createApp } = require("../src/app");
 const { createUsersRepository } = require("../src/modules/auth/users.repository.knex");
 
 test("registration, bcrypt, validation, admin seed and concurrent duplicate emails", {
-    skip: process.env.RUN_DB_TESTS !== "1", timeout: 30000
+    skip: require("../src/config").RUN_DB_TESTS !== "1", timeout: 30000
 }, async () => {
     const config = require("../knexfile");
     const admin = knex(config);

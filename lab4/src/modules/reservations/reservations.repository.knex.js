@@ -40,11 +40,19 @@ function createReservationsRepository(db) {
         },
         findById,
         async create({ roomId, userId, participants, startTime, endTime, status }) {
-            const [row] = await db("reservations").insert({
-                room_id: roomId, user_id: userId, participants,
-                start_time: startTime, end_time: endTime, status
-            }).returning("*");
-            return row ? findById(row.id) : null;
+            for (let attempt = 0; ; attempt++) {
+                try {
+                    const [row] = await db("reservations").insert({
+                        room_id: roomId, user_id: userId, participants,
+                        start_time: startTime, end_time: endTime, status
+                    }).returning("*");
+                    return row ? findById(row.id) : null;
+                } catch (error) {
+                    // A standalone INSERT can deadlock against another exclusion check.
+                    // A failed explicit transaction must instead be retried as a whole.
+                    if (error.code !== "40P01" || db.isTransaction || attempt >= 2) throw error;
+                }
+            }
         },
         async updateStatus(id, status, cancelledAt) {
             const [row] = await db("reservations").where({ id })

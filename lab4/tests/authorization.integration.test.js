@@ -6,7 +6,7 @@ const { randomBytes } = require("node:crypto");
 const { createApp } = require("../src/app");
 
 test("roles, private reservations, filtered pagination and ADMIN business rules", {
-    skip: process.env.RUN_DB_TESTS !== "1", timeout: 30000
+    skip: require("../src/config").RUN_DB_TESTS !== "1", timeout: 30000
 }, async () => {
     const config = require("../knexfile");
     const admin = knex(config);

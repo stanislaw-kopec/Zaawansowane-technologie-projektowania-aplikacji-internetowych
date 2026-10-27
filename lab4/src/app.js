@@ -1,4 +1,6 @@
 const express = require("express");
+const swaggerUi = require("swagger-ui-express");
+const openapi = require("./docs/openapi.json");
 const requestLogger = require("./middleware/requestLogger");
 const notFound = require("./middleware/notFound");
 const errorHandler = require("./middleware/errorHandler");
@@ -27,6 +29,7 @@ function createApp({ jwtSecret, jwtExpiresIn, usersRepository, buildingsReposito
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
     const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction });
     app.use("/api/auth", createAuthRouter(createAuthService({ usersRepository, jwtSecret, jwtExpiresIn }), authenticate(jwtSecret)));
+    app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi));
     app.use(authenticate(jwtSecret));
     const requireAdmin = authorize("ADMIN");
     app.use(["/api/buildings", "/api/rooms"], (req, res, next) => {

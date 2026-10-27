@@ -5,6 +5,7 @@ const idParams = z.object({
 });
 
 const listReservationsQuery = z.object({
+    userId: z.coerce.number().int().positive().optional(),
     roomId: z.coerce.number().int().positive().optional(),
     buildingId: z.coerce.number().int().positive().optional(),
     status: z.enum(["CONFIRMED", "CANCELLED"]).optional(),

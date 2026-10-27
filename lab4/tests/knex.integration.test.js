@@ -58,7 +58,7 @@ test("Knex seeds, HTTP endpoints and persistence after server restart", {
         await seed(db);
         const first = await snapshot();
         userId = (await db("users").where({ email: "jan.kowalski@example.com" }).first()).id;
-        token = require("jsonwebtoken").sign({ role: "USER" }, jwtSecret, { subject: String(userId), expiresIn: "15m" });
+        token = require("jsonwebtoken").sign({ role: "ADMIN" }, jwtSecret, { subject: String(userId), expiresIn: "15m" });
         await seed(db);
         assert.deepEqual(await snapshot(), first);
         assert.deepEqual(first.map(rows => rows.length), [2, 5, 5]);

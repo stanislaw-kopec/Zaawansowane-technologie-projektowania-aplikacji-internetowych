@@ -1,5 +1,6 @@
 const NotFoundError = require("../../errors/NotFoundError");
 const ConflictError = require("../../errors/ConflictError");
+const ForbiddenError = require("../../errors/ForbiddenError");
 const ValidationError = require("../../errors/ValidationError");
 
 const MIN_DURATION_MS = 15 * 60 * 1000;
@@ -15,12 +16,18 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
     runInTransaction = work => work({ roomsRepository, reservationsRepository })
 }) {
     return {
-        async getReservation(id) {
+        async getReservation(id, currentUser) {
             const reservation = await reservationsRepository.findById(id);
-            if (!reservation) throw new NotFoundError("Reservation");
+            if (!reservation || (currentUser.role !== "ADMIN" && reservation.userId !== currentUser.id)) {
+                throw new NotFoundError("Reservation");
+            }
             return reservation;
         },
-        async listReservations(filters) {
+        async listReservations(filters, currentUser) {
+            if (currentUser.role !== "ADMIN") {
+                if (filters.userId !== undefined) throw new ForbiddenError("userId filter is only available to ADMIN");
+                return reservationsRepository.listPage({ ...filters, userId: currentUser.id });
+            }
             return reservationsRepository.listPage(filters);
         },
         async createReservation(input, currentUser) {
@@ -59,9 +66,11 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
                 return reservationsRepository.create({ ...input, userId: currentUser.id, status: "CONFIRMED" });
             });
         },
-        async cancelReservation(id) {
+        async cancelReservation(id, currentUser) {
             const reservation = await reservationsRepository.findById(id);
-            if (!reservation) throw new NotFoundError("Reservation");
+            if (!reservation || (currentUser.role !== "ADMIN" && reservation.userId !== currentUser.id)) {
+                throw new NotFoundError("Reservation");
+            }
             // Ponowienie anulowania nie zmienia danych, nawet gdy termin juz minal.
             if (reservation.status === "CANCELLED") return reservation;
             if (!ALLOWED_TRANSITIONS[reservation.status]?.includes("CANCELLED")) {

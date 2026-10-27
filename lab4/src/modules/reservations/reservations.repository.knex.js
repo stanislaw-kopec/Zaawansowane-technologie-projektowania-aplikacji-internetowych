@@ -16,8 +16,9 @@ function createReservationsRepository(db) {
         .select("u.email as user_email", "res.*", "r.name as room_name", "b.id as building_id", "b.name as building_name");
     const findById = async id => toReservation(await query().where("res.id", id).first());
     return {
-        async listPage({ roomId, buildingId, status, from, to, page = 1, limit = 20, sort = "startTime" } = {}) {
+        async listPage({ userId, roomId, buildingId, status, from, to, page = 1, limit = 20, sort = "startTime" } = {}) {
             const base = query();
+            if (userId !== undefined) base.where("res.user_id", userId);
             if (roomId !== undefined) base.where("res.room_id", roomId);
             if (buildingId !== undefined) base.where("r.building_id", buildingId);
             if (status !== undefined) base.where("res.status", status);

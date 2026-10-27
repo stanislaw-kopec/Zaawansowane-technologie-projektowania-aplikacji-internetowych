@@ -1,4 +1,4 @@
-# Laboratorium 4 — zadania 1-3
+# Laboratorium 4 — zadania 1-4
 
 W katalogu `lab4`:
 
@@ -56,6 +56,17 @@ Migracja zastępuje `reserved_by` kolumną `user_id` (NOT NULL, FK, ON DELETE RE
 {"roomId":1,"participants":5,"startTime":"2035-02-01T10:00:00Z","endTime":"2035-02-01T11:00:00Z"}
 ```
 
-Użytkownik pochodzi wyłącznie z tokenu; `userId` i `reservedBy` w body zwracają `400`. Odpowiedź zawiera `user: { id, email }`. Role i prywatność rezerwacji należą do zadania 4.
+Użytkownik pochodzi wyłącznie z tokenu; `userId` i `reservedBy` w body zwracają `400`. Odpowiedź zawiera `user: { id, email }`. Role i prywatność rezerwacji opisano poniżej.
 
 Skrypt współbieżności wymaga tokenu w zmiennej `ACCESS_TOKEN` i domyślnie używa portu 3001.
+
+## Zadanie 4
+
+- GET budynków i sal: każdy zalogowany użytkownik.
+- POST, PATCH, DELETE budynków i sal: tylko ADMIN; USER otrzymuje `403`. Obecnie zaimplementowane operacje zapisu to POST; zadanie nie dodaje nowych operacji PATCH/DELETE.
+- Lista rezerwacji: USER widzi wyłącznie swoje dane, ADMIN wszystkie. Ograniczenie dotyczy również `total` i działa z pozostałymi filtrami i paginacją.
+- `?userId=`: ADMIN może filtrować po użytkowniku; USER otrzymuje `403`. Wybrano jawny błąd, żeby klient wiedział, że parametr jest niedostępny dla tej roli.
+- Odczyt i anulowanie rezerwacji: właściciel lub ADMIN; inny USER otrzymuje `404`, również gdy rezerwacja jest już anulowana. Sprawdzenie właściciela jest w service.
+- ADMIN nadal podlega regułom kolizji, pojemności i zakazowi anulowania rozpoczętej rezerwacji.
+
+Test `tests/authorization.integration.test.js` sprawdza brak tokenu, właściciela, obcego użytkownika i ADMIN-a oraz wypisuje statusy endpointów.

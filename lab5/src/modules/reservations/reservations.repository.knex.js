@@ -14,7 +14,11 @@ function createReservationsRepository(db) {
         .join("buildings as b", "b.id", "r.building_id")
         .join("users as u", "u.id", "res.user_id")
         .select("u.email as user_email", "res.*", "r.name as room_name", "b.id as building_id", "b.name as building_name");
-    const findById = async id => toReservation(await query().where("res.id", id).first());
+    const findById = async (id, lock = false) => {
+        const statement = query().where("res.id", id).first();
+        if (lock) statement.forUpdate("res");
+        return toReservation(await statement);
+    };
     return {
         async listPage({ userId, roomId, buildingId, status, from, to, page = 1, limit = 20, sort = "startTime" } = {}) {
             const base = query();

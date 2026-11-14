@@ -7,15 +7,30 @@ const input = {
     roomId: 1, participants: 2,
     startTime: "2030-04-10T10:00:00Z", endTime: "2030-04-10T11:00:00Z"
 };
-let service, clock;
+let service, clock, publish;
 
 beforeEach(() => {
     clock = new Date("2030-04-10T09:00:00Z");
+    publish = jest.fn();
     service = createReservationsService({
+        eventBus: { publish },
         roomsRepository: createRoomsRepository(),
         reservationsRepository: createReservationsRepository(),
         now: () => clock
     });
+});
+
+test("only successful state changes publish reservation events", async () => {
+    const reservation = await service.createReservation(input, owner);
+    await expect(service.createReservation(input, owner)).rejects.toMatchObject({ code: "ROOM_ALREADY_BOOKED" });
+    const admin = { id: 2, role: "ADMIN" };
+    await service.cancelReservation(reservation.id, admin);
+    await service.cancelReservation(reservation.id, admin);
+    expect(publish.mock.calls).toEqual([
+        ["reservation.created", { reservationId: reservation.id, userId: owner.id, roomId: input.roomId,
+            startTime: reservation.startTime, endTime: reservation.endTime }],
+        ["reservation.cancelled", { reservationId: reservation.id, userId: owner.id, roomId: input.roomId, cancelledBy: admin.id }]
+    ]);
 });
 
 test.each([

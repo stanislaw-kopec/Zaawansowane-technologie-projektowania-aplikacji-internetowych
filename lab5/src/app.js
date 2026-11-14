@@ -21,17 +21,25 @@ const { createAuthRouter } = require("./modules/auth/auth.routes");
 const authorize = require("./middleware/authorize");
 const authenticate = require("./middleware/authenticate");
 
-function createApp({ jwtSecret, jwtExpiresIn, usersRepository, buildingsRepository, roomsRepository, reservationsRepository, now, runInTransaction, enableDebugRoutes = false }) {
+const { z } = require("zod");
+const validate = require("./middleware/validate");
+
+function createApp({ jwtSecret, jwtExpiresIn, usersRepository, buildingsRepository, roomsRepository, reservationsRepository, now, runInTransaction, eventBus, readAuditLog, enableDebugRoutes = false }) {
     const app = express();
     app.use(requestLogger);
     app.use(express.json());
 
     const roomsService = createRoomsService({ roomsRepository, buildingsRepository });
-    const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction });
+    const reservationsService = createReservationsService({ roomsRepository, reservationsRepository, now, runInTransaction, eventBus });
     app.use("/api/auth", createAuthRouter(createAuthService({ usersRepository, jwtSecret, jwtExpiresIn }), authenticate(jwtSecret)));
     app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openapi));
     app.use(authenticate(jwtSecret));
     const requireAdmin = authorize("ADMIN");
+    app.get("/api/admin/audit-log", requireAdmin, validate({ query: z.object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        eventType: z.string().min(1).optional()
+    }) }), async (req, res) => res.json(await readAuditLog(req.validated.query)));
     app.use(["/api/buildings", "/api/rooms"], (req, res, next) => {
         if (["POST", "PATCH", "DELETE"].includes(req.method)) return requireAdmin(req, res, next);
         next();

@@ -6,8 +6,14 @@ const { createRoomsRepository } = require("./modules/rooms/rooms.repository.knex
 const { createReservationsRepository } = require("./modules/reservations/reservations.repository.knex");
 
 const { createUsersRepository } = require("./modules/auth/users.repository.knex");
+const { createEventBus } = require("./events/eventBus");
+const { registerListeners, createAuditReader } = require("./events/audit");
+const eventBus = createEventBus();
+registerListeners(eventBus, db);
 
 const app = createApp({
+    eventBus,
+    readAuditLog: createAuditReader(db),
     jwtSecret: config.JWT_SECRET,
     jwtExpiresIn: config.JWT_EXPIRES_IN,
     usersRepository: createUsersRepository(db),

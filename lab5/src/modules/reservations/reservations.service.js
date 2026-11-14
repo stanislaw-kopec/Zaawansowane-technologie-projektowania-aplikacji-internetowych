@@ -12,7 +12,7 @@ const ALLOWED_TRANSITIONS = {
     CANCELLED: []
 };
 
-function createReservationsService({ roomsRepository, reservationsRepository, now = () => new Date(),
+function createReservationsService({ roomsRepository, reservationsRepository, eventBus, now = () => new Date(),
     runInTransaction = work => work({ roomsRepository, reservationsRepository })
 }) {
     return {
@@ -31,7 +31,7 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
             return reservationsRepository.listPage(filters);
         },
         async createReservation(input, currentUser) {
-            return runInTransaction(async ({ roomsRepository, reservationsRepository }) => {
+            const created = await runInTransaction(async ({ roomsRepository, reservationsRepository }) => {
                 await roomsRepository.lockById(input.roomId);
                 const room = await roomsRepository.findById(input.roomId);
                 if (!room) throw new NotFoundError("Room");
@@ -65,26 +65,39 @@ function createReservationsService({ roomsRepository, reservationsRepository, no
 
                 return reservationsRepository.create({ ...input, userId: currentUser.id, status: "CONFIRMED" });
             });
+            await eventBus?.publish("reservation.created", {
+                reservationId: created.id, roomId: created.roomId, userId: created.userId,
+                startTime: created.startTime, endTime: created.endTime
+            });
+            return created;
         },
         async cancelReservation(id, currentUser) {
-            const reservation = await reservationsRepository.findById(id);
-            if (!reservation || (currentUser.role !== "ADMIN" && reservation.userId !== currentUser.id)) {
-                throw new NotFoundError("Reservation");
-            }
-            // Ponowienie anulowania nie zmienia danych, nawet gdy termin juz minal.
-            if (reservation.status === "CANCELLED") return reservation;
-            if (!ALLOWED_TRANSITIONS[reservation.status]?.includes("CANCELLED")) {
-                throw new ConflictError(
-                    `Cannot change status from ${reservation.status} to CANCELLED`,
-                    "INVALID_STATUS_TRANSITION"
-                );
-            }
+            let changed = false;
+            const cancelled = await runInTransaction(async ({ reservationsRepository }) => {
+                const reservation = await reservationsRepository.findById(id, true);
+                if (!reservation || (currentUser.role !== "ADMIN" && reservation.userId !== currentUser.id)) {
+                    throw new NotFoundError("Reservation");
+                }
+                // Ponowienie anulowania nie zmienia danych, nawet gdy termin juz minal.
+                if (reservation.status === "CANCELLED") return reservation;
+                if (!ALLOWED_TRANSITIONS[reservation.status]?.includes("CANCELLED")) {
+                    throw new ConflictError(
+                        `Cannot change status from ${reservation.status} to CANCELLED`,
+                        "INVALID_STATUS_TRANSITION"
+                    );
+                }
 
-            const cancelledAt = now();
-            if (new Date(reservation.startTime).getTime() <= cancelledAt.getTime()) {
-                throw new ConflictError("Reservation has already started", "RESERVATION_ALREADY_STARTED");
-            }
-            return reservationsRepository.updateStatus(id, "CANCELLED", cancelledAt);
+                const cancelledAt = now();
+                if (new Date(reservation.startTime).getTime() <= cancelledAt.getTime()) {
+                    throw new ConflictError("Reservation has already started", "RESERVATION_ALREADY_STARTED");
+                }
+                changed = true;
+                return reservationsRepository.updateStatus(id, "CANCELLED", cancelledAt);
+            });
+            if (changed) await eventBus?.publish("reservation.cancelled", {
+                reservationId: id, roomId: cancelled.roomId, userId: cancelled.userId, cancelledBy: currentUser.id
+            });
+            return cancelled;
         }
     };
 }

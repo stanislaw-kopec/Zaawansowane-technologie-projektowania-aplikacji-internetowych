@@ -1,5 +1,7 @@
 # Laboratorium 5 — Room Booking API
 
+[![Lab 5 CI](https://github.com/stanislaw-kopec/Zaawansowane-technologie-projektowania-aplikacji-internetowych/actions/workflows/ci.yml/badge.svg?branch=lab5)](https://github.com/stanislaw-kopec/Zaawansowane-technologie-projektowania-aplikacji-internetowych/actions/workflows/ci.yml)
+
 Uruchom Docker Desktop. W PowerShell wykonaj:
 
 ```powershell

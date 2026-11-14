@@ -1,16 +1,24 @@
-# Laboratorium 4 — zadania 1-5
+# Laboratorium 5 — Room Booking API
 
-W katalogu `lab4`:
+Uruchom Docker Desktop. W PowerShell wykonaj:
 
 ```powershell
-docker compose up -d
-npm ci
-npm run db:migrate
-npm run db:seed
-npm start
+git clone --branch lab5 https://github.com/stanislaw-kopec/Zaawansowane-technologie-projektowania-aplikacji-internetowych.git
+cd Zaawansowane-technologie-projektowania-aplikacji-internetowych/lab5
+cp .env.example .env
+docker compose up --build -d
 ```
 
-PostgreSQL: port `5434`, osobny wolumen `room-booking-lab4_pgdata`. API: `http://localhost:3001` (PORT w `.env`). Przy konfiguracji od zera skopiuj `.env.example` do `.env` i ustaw własne dane bazy. Seed danych rezerwacji usuwa poprzednie dane demonstracyjne.
+Swagger UI: http://localhost:3001/api/docs/. Przy pierwszym starcie API czeka na gotowość PostgreSQL i wykonuje migracje. Wartości z przykładowego pliku służą do lokalnego uruchomienia.
+
+```powershell
+docker compose ps
+docker compose logs api
+docker compose exec api npx knex seed:run
+docker compose down
+```
+
+Seed tworzy konto administratora i odtwarza dane demonstracyjne. Baza zachowuje dane w wolumenie po zatrzymaniu kontenerów.
 
 `POST /api/auth/register`:
 

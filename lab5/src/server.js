@@ -24,3 +24,11 @@ const app = createApp({
 const server = app.listen(config.PORT, () => {
     console.log(`Server running on http://localhost:${server.address().port}`);
 });
+
+process.once("SIGTERM", () => {
+    console.log("SIGTERM: closing HTTP server");
+    server.close(async () => {
+        await db.destroy();
+        console.log("HTTP server and database pool closed");
+    });
+});

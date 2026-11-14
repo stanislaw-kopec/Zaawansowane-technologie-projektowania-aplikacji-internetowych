@@ -1,0 +1,76 @@
+BEFORE FIX
+[2aef98aa-2bc2-4dc5-abe5-a077e520aa96] POST /api/reservations -> 201 (340.9 ms)
+[fca82cd9-7dbe-4b10-b534-4946f437f3b0] POST /api/reservations -> 201 (320.8 ms)
+[a76f4b52-4b0a-416a-9e83-656dce2bb8d5] POST /api/reservations -> 201 (321.1 ms)
+[c8e4f8e3-1863-40d1-ac5b-dc5ddcba25a0] POST /api/reservations -> 201 (323.2 ms)
+[78318d67-b6ba-4bd6-b63a-e1df9063bca7] POST /api/reservations -> 201 (321.3 ms)
+[3b8c4125-a7de-4263-8ea0-b5c52ce0bbff] POST /api/reservations -> 201 (325.9 ms)
+[703f8ea7-a89a-4cb1-830d-50d3f3b5b0a6] POST /api/reservations -> 201 (323.1 ms)
+[0fb5ece0-eaac-4c5b-b171-7c2883ddd216] POST /api/reservations -> 201 (321.4 ms)
+[482eb6c7-e4fb-491c-8176-8bd748d90e9b] POST /api/reservations -> 201 (323.1 ms)
+[fa583663-53b1-4259-b3e4-1b98f9831981] POST /api/reservations -> 201 (321.7 ms)
+Request 1: 201
+Request 4: 201
+Request 5: 201
+Request 3: 201
+Request 7: 201
+Request 2: 201
+Request 6: 201
+Request 9: 201
+Request 8: 201
+Request 10: 201
+CONFIRMED in database: 10
+TRANSACTION + ROOM LOCK + CONSTRAINT
+[fb7aafac-6bd5-4774-a270-6b2fad22cd74] POST /api/reservations -> 201 (293.4 ms)
+Request 2: 201
+[1d9dcb6e-d843-42c1-a0e3-4fbe39d8fac7] POST /api/reservations -> 409 (293.6 ms)
+Request 3: 409
+[73ec62fa-5af2-43f1-a858-3a6c6455f7ab] POST /api/reservations -> 409 (296.8 ms)
+Request 1: 409
+[26fe450c-059a-496b-867e-ddf58358ad9a] POST /api/reservations -> 409 (302.2 ms)
+Request 4: 409
+[117d13d1-280b-49db-8654-56b96c596cff] POST /api/reservations -> 409 (309.2 ms)
+Request 5: 409
+[50989a3f-9cb8-4321-832b-00c6e72594ef] POST /api/reservations -> 409 (317.1 ms)
+Request 6: 409
+[335bd600-a551-48ad-a310-05766dce468d] POST /api/reservations -> 409 (322.8 ms)
+Request 7: 409
+[31d1a8b9-e708-4b20-bdcd-ddc70c9f3c8d] POST /api/reservations -> 409 (329.3 ms)
+Request 8: 409
+[1b44c996-82ac-4a8a-8bb1-88122b799706] POST /api/reservations -> 409 (335.4 ms)
+Request 9: 409
+[872feb84-dcba-43ea-af17-1b90fa0d7704] POST /api/reservations -> 409 (340.5 ms)
+Request 10: 409
+CONFIRMED in database: 1
+DATABASE CONSTRAINT ONLY
+[9d532024-944a-4033-b57f-5272fd22f741] POST /api/reservations -> 409 (275.1 ms)
+[d7241c81-9d66-4436-959c-c8c527a8ca82] POST /api/reservations -> 409 (272.9 ms)
+[8fec7cf6-eaba-4958-916e-0e53b2cf8aef] POST /api/reservations -> 409 (275.4 ms)
+[fbcf6f84-798b-4777-94dc-0aa008cf8f9c] POST /api/reservations -> 409 (280.3 ms)
+[7fe173a1-4e83-424c-af3b-325229fcd3b9] POST /api/reservations -> 409 (275.0 ms)
+[d317a415-2395-4510-80e9-34aa67deee47] POST /api/reservations -> 409 (282.7 ms)
+[ddd1d0a7-1c9e-4ea9-b436-d07bafb2e5bc] POST /api/reservations -> 409 (275.2 ms)
+[5d40f2df-40ad-492e-b0a7-9c172f8db020] POST /api/reservations -> 409 (274.7 ms)
+[a791471f-98f9-4fa7-b71f-c6403072c07b] POST /api/reservations -> 409 (276.0 ms)
+Request 3: 409
+Request 7: 409
+[959c5589-2636-4ccc-be4b-d40237bea821] POST /api/reservations -> 201 (280.7 ms)
+Request 4: 409
+Request 2: 409
+Request 6: 409
+Request 1: 409
+Request 8: 409
+Request 10: 409
+Request 9: 409
+Request 5: 201
+CONFIRMED in database: 1
+Adjacent intervals and replacement after cancellation: OK
+✔ double booking demonstration (1366.8422ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2082.2944

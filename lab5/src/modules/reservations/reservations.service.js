@@ -56,7 +56,7 @@ function createReservationsService({ roomsRepository, reservationsRepository, ev
                 const reservations = await reservationsRepository.list({ roomId: input.roomId });
                 const overlaps = reservations.some(reservation =>
                     reservation.status === "CONFIRMED" &&
-                    start <= new Date(reservation.endTime).getTime() &&
+                    start < new Date(reservation.endTime).getTime() &&
                     new Date(reservation.startTime).getTime() < end
                 );
                 if (overlaps) {
